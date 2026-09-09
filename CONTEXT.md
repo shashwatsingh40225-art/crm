@@ -1,0 +1,51 @@
+# Invictus CRM — Context
+
+The internal system Invictus uses to run Verena's self-launch go-to-market: capture prospects and self-serve signups, move them through one funnel, record what happened, surface what needs a human today.
+
+## Language
+
+**Company**:
+The organization being sold to — either an outbound-scanned ICP prospect or a self-serve signup's employer. The identity anchor for Contacts and Deals.
+_Avoid_: Account, Organization, Prospect (as an entity)
+
+**Contact**:
+A person at a Company. Carries `lifecycle_stage` as a field, not a status on a separate object.
+_Avoid_: Lead, Person
+
+**Lifecycle stage**:
+A value on Company/Contact (HubSpot's model), not a separate Lead entity — chosen specifically to avoid the duplicate-identity and split-activity-history problem of Salesforce's Lead→Contact conversion (Decision D4).
+_Avoid_: Lead status, conversion
+
+**Deal**:
+The single unit of pipeline progress, linked to one Company and one primary Contact. Serves both the outbound-scanned and inbound self-serve motions through one pipeline, distinguished by `source` (Decision D3).
+_Avoid_: Opportunity
+
+**Source**:
+Field on Deal distinguishing `outbound_scan` from `inbound_signup`. Determines pipeline entry point — Scanned for outbound, Engaged for inbound.
+
+**Stage**:
+One of the 7 fixed pipeline steps (Scanned → Qualified → Contacted → Engaged → Evaluating → Proposal → Won/Lost). Each stage has required fields that gate advancing past it — a stage represents a business state, not a dropdown value.
+_Avoid_: Status (too generic for the gated concept)
+
+**StageEvent**:
+Immutable log entry recording one stage transition (from, to, who, when). Append-only — never edited or deleted.
+_Avoid_: History, audit event (AuditEvent is a separate, broader entity covering all writes)
+
+**Activity**:
+A logged interaction — call, email, meeting, or note — against a Company, Contact, or Deal.
+
+**Finding** _(stretch scope only)_:
+An observation from the outbound scanner about a Company's compliance posture, with a confidence score. Belongs to the scan-ingestion stretch feature, not the core pipeline.
+
+**Verena**:
+The product being sold. This CRM never stores Verena's compliance findings or agent output as content — only that an event happened (signup, plan change).
+_Avoid_: using "Verena" to refer to this CRM itself
+
+**Invictus Counsel**:
+The affiliated law firm. Out of scope for this build entirely (Decision D7) — no matters, documents, or conflicts data enters this system, ever.
+
+## Deliberately excluded — named so nobody reintroduces them
+
+- **Lead** as a separate object — see Lifecycle stage above.
+- **Relationship** as a typed per-product-line entity — explored in early research for a broader Invictus-wide CRM spanning Verena and Counsel, abandoned when scope narrowed to Verena-only. Do not resurrect without deliberately reopening scope with Shashwat.
+- **Matter, Document, ConflictsRecord** — Counsel's domain, never this CRM's.

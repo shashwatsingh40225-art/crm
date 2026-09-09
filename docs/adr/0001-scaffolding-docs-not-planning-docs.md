@@ -1,0 +1,3 @@
+# ADR 0001: CONTEXT.md and this ADR log are build scaffolding, not new planning documents
+
+STATE.md's "no new planning documents" rule exists to stop the pre-build treadmill — four analysis documents produced, zero code written. CONTEXT.md and this ADR log are a different kind of artifact: they are read by the Claude Code agents *during* the build, the same way CLAUDE.md is, not another round of strategic analysis aimed at Shashwat. They exist so three parallel agents don't quietly diverge on vocabulary or on decisions that are expensive to reverse mid-build. Kept deliberately small — a short glossary, and ADRs only where a real trade-off was made and reversing it later would cost real time.
