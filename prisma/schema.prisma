@@ -1,0 +1,18 @@
+// Invictus CRM — Verena self-launch.
+//
+// FROZEN CONTRACT (CLAUDE.md D6 / §8).
+// After Foundation commits this file, no feature agent edits it and no feature
+// agent runs `prisma migrate`. If a field is genuinely missing, stop and tell
+// Shashwat which model, which field, which type and why.
+//
+// Vocabulary: see CONTEXT.md. Pipeline semantics: see CLAUDE.md §4.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}

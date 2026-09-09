@@ -42,3 +42,5 @@ next-env.d.ts
 
 # keep the documented env template (INV-6)
 !.env.example
+
+/lib/generated/prisma
