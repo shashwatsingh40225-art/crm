@@ -1,11 +1,19 @@
-// Invictus CRM — Verena self-launch.
+// ===========================================================================
+// Invictus CRM - Verena self-launch
 //
-// FROZEN CONTRACT (CLAUDE.md D6 / §8).
-// After Foundation commits this file, no feature agent edits it and no feature
-// agent runs `prisma migrate`. If a field is genuinely missing, stop and tell
-// Shashwat which model, which field, which type and why.
+// FROZEN CONTRACT (CLAUDE.md D6 / section 8).
+// Once Shashwat confirms the freeze, no feature agent edits this file and no
+// feature agent runs `prisma migrate`. If a field is genuinely missing: stop,
+// and say which model, which field, which type, and why.
 //
-// Vocabulary: see CONTEXT.md. Pipeline semantics: see CLAUDE.md §4.
+// Conventions
+//   - Prisma fields are camelCase; columns and tables are mapped to the
+//     snake_case names used in CLAUDE.md section 3. Agents write
+//     `deal.nextActionDue` in TypeScript; the column is `next_action_due`.
+//   - StageEvent is append-only. Never update or delete a row.
+//   - There is no Lead model, by decision D4. Lifecycle is a field on Company
+//     and Contact.
+// ===========================================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -15,4 +23,429 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+// --------------------------------------------------------------------------
+// Enums
+//
+// Values are lower_snake_case to match the literal strings CLAUDE.md uses
+// (e.g. `source = inbound_signup`), so contract text and code agree.
+// --------------------------------------------------------------------------
+
+enum UserRole {
+  admin
+  member
+}
+
+/// How the relationship originated. Inbound signups enter the pipeline at
+/// Engaged with source = inbound_signup and legitimately skip Scanned and
+/// Contacted.
+enum Source {
+  outbound_scan
+  inbound_signup
+  referral
+}
+
+/// D4 made real: the relationship state of a Company or Contact. Deliberately
+/// NOT the same vocabulary as the deal Stage - a Stage is where a deal sits in
+/// the pipeline; lifecycle is what this account is to us.
+enum LifecycleStage {
+  prospect
+  lead
+  qualified
+  opportunity
+  customer
+  churned
+  disqualified
+}
+
+/// Gate field for Stage 1 -> 2. Must be set by a human before a scanned
+/// prospect can advance.
+enum IcpFit {
+  strong
+  moderate
+  weak
+  none
+}
+
+/// Headcount bands. An enum rather than free text so INV-10's badges have a
+/// closed set to colour.
+enum CompanySize {
+  size_1_10
+  size_11_50
+  size_51_200
+  size_201_1000
+  size_1000_plus
+}
+
+/// Verena plan tiers (A3): Starter $99 / Professional $299 / Enterprise $999.
+enum PlanTier {
+  starter
+  professional
+  enterprise
+}
+
+/// Stable handle for a Stage row. The server-side gate keys off this, not off
+/// Stage.name - renaming a stage in the UI must not silently disable its
+/// entry criteria.
+enum StageKey {
+  scanned
+  qualified
+  contacted
+  engaged
+  evaluating
+  proposal
+  closed
+}
+
+/// Outcome of the terminal stage. Null while the deal is still open.
+enum DealOutcome {
+  won
+  lost
+}
+
+enum ActivityType {
+  call
+  email
+  meeting
+  note
+  demo
+  signup
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+}
+
+/// Confidence in an automated scan finding, pending human review.
+enum FindingConfidence {
+  high
+  medium
+  low
+}
+
+// --------------------------------------------------------------------------
+// Core records
+// --------------------------------------------------------------------------
+
+model User {
+  id    String   @id @default(cuid())
+  email String   @unique
+  name  String
+  role  UserRole @default(member)
+
+  /// Supabase Auth user id (auth.users.id). Links the application User row to
+  /// the identity that actually signs in. Nullable so the seed can create
+  /// teammates who own records without every one having a login.
+  authUserId String? @unique @map("auth_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  companies        Company[]
+  contacts         Contact[]
+  deals            Deal[]
+  tasks            Task[]
+  activities       Activity[]
+  stageEvents      StageEvent[]
+  auditEvents      AuditEvent[]
+  reviewedFindings Finding[]
+
+  @@map("users")
+}
+
+model Company {
+  id     String  @id @default(cuid())
+  name   String
+  /// Indexed but deliberately NOT unique - INV-22 (company dedupe, SHOULD) is
+  /// an application-level merge flow. A hard constraint here would make CSV
+  /// import (INV-23) fail on the very duplicates that ticket exists to surface.
+  domain String?
+
+  industry       String?
+  size           CompanySize?
+  source         Source         @default(outbound_scan)
+  icpFit         IcpFit?        @map("icp_fit")
+  lifecycleStage LifecycleStage @default(prospect) @map("lifecycle_stage")
+
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  contacts   Contact[]
+  deals      Deal[]
+  activities Activity[]
+  tasks      Task[]
+  findings   Finding[]
+
+  @@index([domain])
+  @@index([ownerId])
+  @@index([lifecycleStage])
+  @@map("companies")
+}
+
+model Contact {
+  id    String  @id @default(cuid())
+  name  String
+  /// Not unique, for the same reason as Company.domain.
+  email String?
+  title String?
+  phone String?
+
+  lifecycleStage LifecycleStage @default(lead) @map("lifecycle_stage")
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  activities Activity[]
+  tasks      Task[]
+  primaryFor Deal[]
+
+  @@index([companyId])
+  @@index([email])
+  @@index([ownerId])
+  @@map("contacts")
+}
+
+// --------------------------------------------------------------------------
+// Pipeline
+// --------------------------------------------------------------------------
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  stages Stage[]
+
+  @@map("pipelines")
+}
+
+model Stage {
+  id   String   @id @default(cuid())
+  key  StageKey
+  name String
+
+  /// Order on the board, 1-based.
+  position Int
+
+  /// Forecast weighting, 0-100.
+  probability Int @default(0)
+
+  pipelineId String   @map("pipeline_id")
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  deals           Deal[]
+  stageEventsFrom StageEvent[] @relation("StageEventFrom")
+  stageEventsTo   StageEvent[] @relation("StageEventTo")
+
+  @@unique([pipelineId, key])
+  @@unique([pipelineId, position])
+  @@map("stages")
+}
+
+model Deal {
+  id   String @id @default(cuid())
+  name String
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  primaryContactId String?  @map("primary_contact_id")
+  primaryContact   Contact? @relation(fields: [primaryContactId], references: [id], onDelete: SetNull)
+
+  stageId String @map("stage_id")
+  stage   Stage  @relation(fields: [stageId], references: [id])
+
+  source Source @default(outbound_scan)
+
+  // Stage-gate fields. Each is optional in the schema and required by the
+  // server-side gate at the transition that needs it - a deal legitimately has
+  // no proposedMrr until it reaches Proposal. Enforcement lives in the API
+  // route (INV-30), which returns 422 with the list of missing fields.
+
+  /// Gate: Contacted -> Engaged.
+  lastOutreachAt DateTime? @map("last_outreach_at")
+
+  /// Gate: Evaluating -> Proposal. The tier the prospect signalled interest in,
+  /// before a formal proposal exists.
+  verenaPlanInterest PlanTier? @map("verena_plan_interest")
+
+  /// Gate: Proposal -> Won/Lost.
+  proposedTier PlanTier? @map("proposed_tier")
+  proposedMrr  Decimal?  @map("proposed_mrr") @db.Decimal(10, 2)
+
+  /// Gate: Engaged -> Evaluating.
+  nextAction    String?   @map("next_action")
+  nextActionDue DateTime? @map("next_action_due")
+
+  /// Terminal stage only. lostReason is required by the gate when outcome=lost.
+  outcome    DealOutcome?
+  lostReason String?      @map("lost_reason")
+  closedAt   DateTime?    @map("closed_at")
+
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stageEvents StageEvent[]
+  activities  Activity[]
+  tasks       Task[]
+
+  @@index([companyId])
+  @@index([stageId])
+  @@index([ownerId])
+  @@index([nextActionDue])
+  @@map("deals")
+}
+
+/// APPEND-ONLY. Every successful transition writes one row, including kanban
+/// drags and backwards moves. A correction is a new transition, never an edit.
+/// There is no updatedAt here on purpose.
+model StageEvent {
+  id String @id @default(cuid())
+
+  dealId String @map("deal_id")
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  /// Null for the first event, when the deal enters the pipeline.
+  fromStageId String? @map("from_stage_id")
+  fromStage   Stage?  @relation("StageEventFrom", fields: [fromStageId], references: [id])
+
+  toStageId String @map("to_stage_id")
+  toStage   Stage  @relation("StageEventTo", fields: [toStageId], references: [id])
+
+  changedById String? @map("changed_by")
+  changedBy   User?   @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  changedAt DateTime @default(now()) @map("changed_at")
+
+  @@index([dealId, changedAt])
+  @@map("stage_events")
+}
+
+// --------------------------------------------------------------------------
+// Activity and work
+// --------------------------------------------------------------------------
+
+/// Polymorphic across Company, Contact and Deal via three nullable FKs rather
+/// than an (entity_type, entity_id) pair, so the database still enforces
+/// referential integrity and ActivityTimeline can filter on an indexed column.
+/// At least one of the three should be set.
+model Activity {
+  id      String       @id @default(cuid())
+  type    ActivityType
+  subject String
+  body    String?
+
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  contactId String?  @map("contact_id")
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  dealId String? @map("deal_id")
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  occurredAt DateTime @map("occurred_at")
+
+  createdById String? @map("created_by")
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, occurredAt])
+  @@index([contactId, occurredAt])
+  @@index([dealId, occurredAt])
+  @@index([occurredAt])
+  @@map("activities")
+}
+
+model Task {
+  id      String    @id @default(cuid())
+  title   String
+  dueDate DateTime? @map("due_date")
+
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  completedAt DateTime? @map("completed_at")
+
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  contactId String?  @map("contact_id")
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  dealId String? @map("deal_id")
+  deal   Deal?   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId, dueDate])
+  @@index([dealId])
+  @@map("tasks")
+}
+
+/// Scan output backing the Stage 1 gate (at least one finding). The Findings
+/// UI is stretch (INV-42..45); the table is not, because the gate depends on
+/// it and the schema freezes now.
+model Finding {
+  id String @id @default(cuid())
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// e.g. "ADA", "GDPR", "CCPA".
+  framework   String
+  observation String
+  evidenceUrl String?           @map("evidence_url")
+  confidence  FindingConfidence @default(medium)
+
+  reviewedById String?   @map("reviewed_by")
+  reviewedBy   User?     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? @map("reviewed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@map("findings")
+}
+
+// --------------------------------------------------------------------------
+// Audit
+// --------------------------------------------------------------------------
+
+/// Written by the Prisma Client Extension in lib/audit.ts, never by hand.
+/// Append-only.
+model AuditEvent {
+  id         String      @id @default(cuid())
+  entityType String      @map("entity_type")
+  entityId   String      @map("entity_id")
+  action     AuditAction
+
+  actorId String? @map("actor_id")
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  before Json?
+  after  Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_events")
 }
