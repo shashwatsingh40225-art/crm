@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "ask": [
+      "Edit(prisma/schema.prisma)",
+      "Edit(lib/db.ts)",
+      "Edit(lib/audit.ts)",
+      "Edit(components/ui/**)",
+      "Edit(app/layout.tsx)",
+      "Edit(app/(nav)/**)",
+      "Bash(git merge:*)",
+      "Bash(git push:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
