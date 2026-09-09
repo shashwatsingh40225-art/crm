@@ -62,26 +62,33 @@ any earlier document that says otherwise is wrong.
 Vocabulary and meaning live in `CONTEXT.md`. This is the shape.
 
 ```
-User        id, email, name, role
+User        id, email, name, role, auth_user_id, created_at, updated_at
 Company     id, name, domain, industry, size, source, icp_fit,
-            lifecycle_stage, owner_id, created_at
+            lifecycle_stage, owner_id, created_at, updated_at
 Contact     id, company_id, name, email, title, phone,
-            lifecycle_stage, owner_id
+            lifecycle_stage, owner_id, created_at, updated_at
 Deal        id, company_id, primary_contact_id, name, stage_id,
-            source, proposed_tier, proposed_mrr, next_action,
-            next_action_due, owner_id, closed_at, lost_reason
-Pipeline    id, name
-Stage       id, pipeline_id, name, position, probability
+            source, last_outreach_at, verena_plan_interest,
+            proposed_tier, proposed_mrr, next_action, next_action_due,
+            outcome, lost_reason, closed_at, owner_id,
+            created_at, updated_at
+Pipeline    id, name, created_at
+Stage       id, pipeline_id, key, name, position, probability
 StageEvent  id, deal_id, from_stage_id, to_stage_id, changed_by, changed_at
 Activity    id, type, subject, body, company_id?, contact_id?,
-            deal_id?, occurred_at, created_by
+            deal_id?, occurred_at, created_by, created_at
 Task        id, title, due_date, owner_id, completed_at,
-            company_id?, contact_id?, deal_id?
+            company_id?, contact_id?, deal_id?, created_at, updated_at
 Finding     id, company_id, framework, observation, evidence_url,
-            confidence, reviewed_by, reviewed_at        [stretch]
+            confidence, reviewed_by, reviewed_at, created_at
 AuditEvent  id, entity_type, entity_id, action, actor_id,
             before, after, created_at
 ```
+
+Prisma fields are camelCase (`deal.nextActionDue`); columns are the snake_case names above.
+`Stage.key` is the stable handle the gate reads — never `Stage.name`, or renaming a stage in
+the UI silently disables its entry criteria. The `Finding` **table** exists because the
+stage-1 gate requires ≥1 finding; the Findings **feature** is still stretch.
 
 **StageEvent is append-only.** Never update or delete a StageEvent row. A correction is a
 new transition, not an edited history.
@@ -160,8 +167,8 @@ detail in `docs/AGENT_CONTRACT.md` §2.
 
 - Every list endpoint returns `{ data, total }`.
 - Every mutation writes an AuditEvent through `lib/audit.ts`.
-- Every detail page renders `<ActivityTimeline entity={...} />` — Agent C's component,
-  stubbed in Foundation so Agents A and B are never blocked on it.
+- Every detail page renders `<ActivityTimeline entityType="company" entityId={id} />` —
+  Agent C's component, stubbed in Foundation so Agents A and B are never blocked on it.
 - Server-side validation on every write. The UI is not the enforcement layer.
 - Use the shared primitives in `components/ui/**`. Do not hand-roll a second data table.
 
