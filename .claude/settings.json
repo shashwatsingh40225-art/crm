@@ -6,7 +6,7 @@
       "Edit(lib/audit.ts)",
       "Edit(components/ui/**)",
       "Edit(app/layout.tsx)",
-      "Edit(app/(nav)/**)",
+      "Edit(app/(nav)/layout.tsx)",
       "Bash(git merge:*)",
       "Bash(git push:*)",
       "Bash(npx prisma migrate:*)",

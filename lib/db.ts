@@ -1,19 +1,21 @@
 /**
- * Shared Prisma client (CLAUDE.md §7 — built in Foundation, read-only afterwards).
+ * Shared Prisma client (CLAUDE.md section 7 - built in Foundation, read-only
+ * afterwards).
  *
  * Every agent imports `prisma` from here. Nobody constructs their own
- * PrismaClient: the audit extension is attached at this single point (INV-11),
- * so a second client would write mutations that never produce an AuditEvent.
+ * PrismaClient: the audit extension is attached at this single point, so a
+ * second client would write mutations that never produce an AuditEvent.
  *
- * Cross-agent reads go through this client directly (ADR 0002 / CLAUDE.md §9).
- * Agents never call each other's API routes.
+ * Cross-agent reads go through this client directly (ADR 0002 / CLAUDE.md
+ * section 9). Agents never call each other's API routes.
  */
 import { PrismaClient } from "@prisma/client";
+import { withAudit } from "./audit";
 
 const createPrismaClient = () =>
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-  });
+  }).$extends(withAudit);
 
 type AppPrismaClient = ReturnType<typeof createPrismaClient>;
 
