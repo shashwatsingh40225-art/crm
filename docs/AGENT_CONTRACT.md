@@ -51,6 +51,30 @@ fails silently, which is why it is called out here.
 
 Worked example: [`app/api/me/route.ts`](../app/api/me/route.ts).
 
+### The lazy-promise trap (hit and fixed during Foundation)
+
+Prisma promises are lazy. `prisma.deal.update(...)` builds a `PrismaPromise`; the
+query — and the audit extension — runs only when something awaits it. So this
+logs a **null actor**, even though it looks correct:
+
+```ts
+// WRONG: the PrismaPromise escapes the withActor scope unawaited
+await withActor(user.id, () => prisma.deal.update({ where, data }));
+```
+
+`withActor` now awaits internally (`run(store, async () => await fn())`), so
+both forms work. Prefer the explicit one anyway — it survives someone
+"simplifying" the helper later:
+
+```ts
+await withActor(user.id, async () => {
+  return await prisma.deal.update({ where, data });
+});
+```
+
+If you ever see an `AuditEvent` with `actorId: null` from a route, this is the
+first thing to check.
+
 ## 3. API shape
 
 - List endpoints return `{ data, total }`.

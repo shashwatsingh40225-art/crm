@@ -26,7 +26,26 @@ import { Prisma } from "@prisma/client";
 
 export type AuditActor = { userId: string | null };
 
-const auditContext = new AsyncLocalStorage<AuditActor>();
+/**
+ * The AsyncLocalStorage instance is pinned to globalThis.
+ *
+ * `prisma` is cached on globalThis to survive dev hot-reload, so the extension
+ * closure keeps whichever instance of THIS module existed when the client was
+ * first constructed. If a route handler later imported a fresh instance, it
+ * would call withActor() on a different AsyncLocalStorage than the extension
+ * reads, and every mutation would log a null actor.
+ *
+ * Precaution, not a fix for anything observed: the null-actor bug that actually
+ * occurred here was the lazy-PrismaPromise one described on withActor() below.
+ */
+const globalForAudit = globalThis as unknown as {
+  auditContext?: AsyncLocalStorage<AuditActor>;
+};
+
+const auditContext =
+  globalForAudit.auditContext ?? new AsyncLocalStorage<AuditActor>();
+
+globalForAudit.auditContext = auditContext;
 
 /**
  * Runs `fn` with the acting user attached, so every mutation inside it records
@@ -42,8 +61,23 @@ const auditContext = new AsyncLocalStorage<AuditActor>();
  *     });
  *   }
  */
-export function withActor<T>(userId: string | null, fn: () => Promise<T>) {
-  return auditContext.run({ userId }, fn);
+export function withActor<T>(
+  userId: string | null,
+  fn: () => Promise<T> | T,
+): Promise<T> {
+  // The `async () => await fn()` wrapper is load-bearing. Do not simplify it to
+  // `auditContext.run({ userId }, fn)`.
+  //
+  // Prisma promises are LAZY: `prisma.user.update(...)` only builds a
+  // PrismaPromise, and the query - along with the audit extension - runs when
+  // something calls .then() on it. If fn is a plain arrow that returns the
+  // PrismaPromise unawaited, that promise escapes run() and executes AFTER the
+  // AsyncLocalStorage scope has closed. The mutation succeeds and the
+  // AuditEvent records a null actor.
+  //
+  // Awaiting inside the scope forces .then() to be called within it, so the
+  // callback works whether or not the caller remembered to await.
+  return auditContext.run({ userId }, async () => await fn());
 }
 
 /** The acting user id, or null outside a withActor() scope (seed, scripts). */
@@ -132,6 +166,11 @@ export const withAudit = Prisma.defineExtension((client) =>
     name: "audit-log-context",
     query: {
       $allOperations: async ({ model, operation, args, query }) => {
+        // Read the actor synchronously on entry rather than after the awaits
+        // below, so the value cannot depend on context surviving the engine
+        // round trip.
+        const actorId = getActorId();
+
         const action = model ? actionFor(operation) : null;
 
         if (!model || !action || !AUDITED_MODELS.has(model)) {
@@ -164,7 +203,7 @@ export const withAudit = Prisma.defineExtension((client) =>
               entityType: model,
               entityId: idOf(result),
               action,
-              actorId: getActorId(),
+              actorId,
               before,
               after: action === "delete" ? undefined : scrub(result),
             },
