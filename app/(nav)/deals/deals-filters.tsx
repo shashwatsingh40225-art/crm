@@ -38,6 +38,7 @@ export function DealsFilters({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
+    params.delete("page");
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
   }
@@ -45,7 +46,8 @@ export function DealsFilters({
   const hasFilters =
     searchParams.has("stage") ||
     searchParams.has("owner") ||
-    searchParams.has("source");
+    searchParams.has("source") ||
+    searchParams.has("q");
 
   return (
     <div className="flex flex-wrap items-center gap-2">

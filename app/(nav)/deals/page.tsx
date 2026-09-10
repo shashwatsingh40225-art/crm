@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { DealsFilters } from "./deals-filters";
+import { DealsSearch } from "./deals-search";
+import { DealsPagination } from "./deals-pagination";
 import { DealsTable, type DealRow } from "./deals-table";
 import { DealsViewTabs } from "./deals-view-tabs";
 import { ageInDays } from "./deals-format";
@@ -17,10 +19,13 @@ function isSource(value: string): value is Source {
   return (SOURCE_VALUES as string[]).includes(value);
 }
 
+const PAGE_SIZE = 25;
+
 /**
- * Deal list (INV-25). Server component: filters are read from the URL search
- * params and applied in the Prisma `where`, so the list, the filter state and
- * a shared link/refresh all agree - no separate client-side filter state.
+ * Deal list (INV-25, paging and search added in INV-55). Server component:
+ * filters, search and page are read from the URL search params and applied
+ * in the Prisma `where`/`take`/`skip`, so the list, the filter state and a
+ * shared link/refresh all agree - no separate client-side filter state.
  *
  * Age in stage is computed from each deal's latest StageEvent, not from
  * createdAt (acceptance criterion) - a deal that has moved stages several
@@ -29,7 +34,13 @@ function isSource(value: string): value is Source {
 export default async function DealsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string; owner?: string; source?: string }>;
+  searchParams: Promise<{
+    stage?: string;
+    owner?: string;
+    source?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
 
@@ -38,7 +49,8 @@ export default async function DealsPage({
     prisma.user.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const where: Prisma.DealWhereInput = {};
+  // Never lists a record that's been taken out of the working views (ADR 0003).
+  const where: Prisma.DealWhereInput = { archivedAt: null };
   if (params.stage) {
     const stage = stages.find((s) => s.key === params.stage);
     if (stage) where.stageId = stage.id;
@@ -46,18 +58,38 @@ export default async function DealsPage({
   if (params.owner) where.ownerId = params.owner;
   if (params.source && isSource(params.source)) where.source = params.source;
 
-  const hasFilters = Boolean(params.stage || params.owner || params.source);
+  // Matches the deal's own name or its company's - a rep searching usually
+  // remembers the company, not the deal title. Combines with the filters
+  // above via AND (each top-level `where` key is ANDed by Prisma); only the
+  // name/company match is an OR, nested inside its own key.
+  const q = params.q?.trim();
+  if (q) {
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { company: { name: { contains: q, mode: "insensitive" } } },
+    ];
+  }
 
-  const deals = await prisma.deal.findMany({
-    where,
-    include: {
-      company: { select: { name: true } },
-      owner: { select: { name: true } },
-      stage: true,
-      stageEvents: { orderBy: { changedAt: "desc" }, take: 1 },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const hasFilters = Boolean(params.stage || params.owner || params.source || q);
+
+  const requestedPage = Number(params.page);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+  const [total, deals] = await Promise.all([
+    prisma.deal.count({ where }),
+    prisma.deal.findMany({
+      where,
+      include: {
+        company: { select: { name: true } },
+        owner: { select: { name: true } },
+        stage: true,
+        stageEvents: { orderBy: { changedAt: "desc" }, take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE,
+      skip: (page - 1) * PAGE_SIZE,
+    }),
+  ]);
 
   const rows: DealRow[] = deals.map((d) => {
     const enteredStageAt = d.stageEvents[0]?.changedAt ?? d.createdAt;
@@ -96,7 +128,10 @@ export default async function DealsPage({
         }
       />
       <DealsViewTabs />
-      <DealsFilters stages={stages} owners={owners} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <DealsFilters stages={stages} owners={owners} />
+        <DealsSearch />
+      </div>
       <DealsTable
         deals={rows}
         emptyState={
@@ -111,6 +146,7 @@ export default async function DealsPage({
           />
         }
       />
+      <DealsPagination page={page} pageSize={PAGE_SIZE} total={total} />
     </>
   );
 }
