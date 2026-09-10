@@ -133,6 +133,10 @@ async function main() {
             observation: f.observation,
             evidenceUrl: f.evidenceUrl,
             confidence: f.confidence,
+            // Seeded Findings are already reviewed (reviewedBy/At below) and
+            // their prospects are already in the pipeline, so they are approved -
+            // pending would put ten phantom rows in the INV-61 review queue.
+            reviewStatus: "approved",
             reviewedById: owner.id,
             reviewedAt: daysAgo(55 - i * 4),
           },
