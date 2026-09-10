@@ -9,6 +9,7 @@ import { DetailPanel, DetailField } from "@/components/ui/detail-panel";
 import { SourceBadge, IcpFitBadge } from "@/components/ui/badges";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { LifecycleStageControl } from "../lifecycle-stage-control";
+import { ArchiveControl } from "../archive-control";
 import {
   ContactsPanel,
   DealsPanel,
@@ -42,13 +43,13 @@ export default async function CompanyDetailPage({
     include: { owner: true },
   });
 
-  if (!company) notFound();
+  if (!company || company.archivedAt) notFound();
 
   // Deals and Tasks belong to Agents B and C. Read through the shared client,
   // never through their API routes (ADR 0002 / CLAUDE.md section 9).
   const [contacts, deals, tasks, lastActivity] = await Promise.all([
     prisma.contact.findMany({
-      where: { companyId: id },
+      where: { companyId: id, archivedAt: null },
       orderBy: { name: "asc" },
     }),
     prisma.deal.findMany({
@@ -109,6 +110,12 @@ export default async function CompanyDetailPage({
             <Button asChild size="sm" variant="outline">
               <Link href={`/companies/${company.id}/edit`}>Edit</Link>
             </Button>
+            <ArchiveControl
+              entityType="company"
+              entityId={company.id}
+              entityName={company.name}
+              contactCount={contacts.length}
+            />
           </>
         }
       />

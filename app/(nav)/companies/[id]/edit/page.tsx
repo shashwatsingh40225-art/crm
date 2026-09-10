@@ -17,7 +17,7 @@ export default async function EditCompanyPage({
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
-  if (!company) notFound();
+  if (!company || company.archivedAt) notFound();
 
   return (
     <>

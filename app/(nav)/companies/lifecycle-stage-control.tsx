@@ -13,6 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// "company" -> "companies" isn't a plain `+ "s"` - naive pluralization 404s
+// the API route (found while wiring up the archive control, INV-53).
+const API_BASE: Record<"company" | "contact", string> = {
+  company: "/api/companies",
+  contact: "/api/contacts",
+};
+
 const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
   prospect: "Prospect",
   lead: "Lead",
@@ -54,7 +61,7 @@ export function LifecycleStageControl({
     setStage(nextStage);
     setPending(true);
 
-    const res = await fetch(`/api/${entityType}s/${entityId}/lifecycle-stage`, {
+    const res = await fetch(`${API_BASE[entityType]}/${entityId}/lifecycle-stage`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lifecycleStage: nextStage }),

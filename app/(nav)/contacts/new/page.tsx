@@ -13,13 +13,14 @@ export default async function NewContactPage({
 
   const [companies, owners, lockedCompany] = await Promise.all([
     prisma.company.findMany({
+      where: { archivedAt: null },
       orderBy: { name: "asc" },
       select: { id: true, name: true, domain: true },
     }),
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     companyId
-      ? prisma.company.findUnique({
-          where: { id: companyId },
+      ? prisma.company.findFirst({
+          where: { id: companyId, archivedAt: null },
           select: { id: true, name: true, domain: true },
         })
       : null,

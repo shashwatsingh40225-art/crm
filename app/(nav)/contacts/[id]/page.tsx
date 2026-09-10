@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DetailField } from "@/components/ui/detail-panel";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { LifecycleStageControl } from "../../companies/lifecycle-stage-control";
+import { ArchiveControl } from "../../companies/archive-control";
 import {
   DealsPanel,
   TasksPanel,
@@ -31,7 +32,7 @@ export default async function ContactDetailPage({
     include: { owner: true, company: true },
   });
 
-  if (!contact) notFound();
+  if (!contact || contact.archivedAt) notFound();
 
   // Only deals this contact is PRIMARY on - not every deal at their company.
   // Deals and Tasks are read through the shared client (ADR 0002).
@@ -63,9 +64,16 @@ export default async function ContactDetailPage({
         title={contact.name}
         description={contact.title ?? undefined}
         actions={
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/contacts/${contact.id}/edit`}>Edit</Link>
-          </Button>
+          <>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/contacts/${contact.id}/edit`}>Edit</Link>
+            </Button>
+            <ArchiveControl
+              entityType="contact"
+              entityId={contact.id}
+              entityName={contact.name}
+            />
+          </>
         }
       />
 

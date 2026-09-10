@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   // row. INV-22's normalizeDomain decides what "same domain" means; this
   // route reuses it rather than defining a second rule.
   const existing = await prisma.company.findMany({
-    where: { domain: { not: null } },
+    where: { domain: { not: null }, archivedAt: null },
     select: { id: true, domain: true },
   });
 

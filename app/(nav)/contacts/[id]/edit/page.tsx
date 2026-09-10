@@ -15,13 +15,14 @@ export default async function EditContactPage({
   const [contact, companies, owners] = await Promise.all([
     prisma.contact.findUnique({ where: { id } }),
     prisma.company.findMany({
+      where: { archivedAt: null },
       orderBy: { name: "asc" },
       select: { id: true, name: true, domain: true },
     }),
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
-  if (!contact) notFound();
+  if (!contact || contact.archivedAt) notFound();
 
   return (
     <>

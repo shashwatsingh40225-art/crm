@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const { title, phone, ownerId, ...rest } = parsed.data;
 
   const existing = await prisma.contact.findFirst({
-    where: { email: { equals: rest.email, mode: "insensitive" } },
+    where: { email: { equals: rest.email, mode: "insensitive" }, archivedAt: null },
   });
   if (existing) {
     return Response.json(
