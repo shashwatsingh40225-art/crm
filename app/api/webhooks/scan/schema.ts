@@ -8,12 +8,16 @@ import { z } from "zod";
 export const scanFindingSchema = z.object({
   framework: z.string().trim().min(1, "framework is required"),
   observation: z.string().trim().min(1, "observation is required"),
+  // Empty string is treated as absent, not malformed - real senders emit ""
+  // constantly and a 422 on an optional field is a bad front door (Shashwat,
+  // 10 Sep checkpoint).
   evidence_url: z
     .string()
     .trim()
-    .url("evidence_url must be a valid URL")
     .optional()
-    .nullable(),
+    .nullable()
+    .transform((v) => (v ? v : null))
+    .pipe(z.string().url("evidence_url must be a valid URL").nullable()),
   // Optional with the same default as Finding.confidence in the schema
   // (medium), rather than required - a scanner that can't score its own
   // observation shouldn't fail the whole payload over it.
