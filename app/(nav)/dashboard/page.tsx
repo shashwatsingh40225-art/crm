@@ -11,6 +11,8 @@ import { getStaleDeals } from "@/app/api/dashboard/stale-deals/query";
 import { FunnelChart } from "./funnel-chart";
 import { MetricTiles } from "./metric-tiles";
 import { PeriodToggle } from "./period-toggle";
+import { ScopeToggle } from "./scope-toggle";
+import { scopeSearchParamsCache } from "./scope";
 import { SourceToggle } from "./source-toggle";
 import { WorkQueue } from "./work-queue";
 import { StalledDealsWidget } from "./stalled-deals-widget";
@@ -29,30 +31,37 @@ function isPeriod(value: string): value is Period {
 
 /**
  * INV-37/38/39/40/41 (INV-36 folded into the work queue's "next action"
- * section). Server component: the source and period toggles are URL params
- * (like Agent B's deal filters), so this re-queries directly on navigation
- * with no client-side fetch or state to keep in sync. The work queue and
- * stalled-deals widget aren't filter-driven, so they just run once per
- * render alongside the funnel/metrics queries.
+ * section). Server component: the source, period and INV-59 scope toggles
+ * are URL params (like Agent B's deal filters), so this re-queries directly
+ * on navigation with no client-side fetch or state to keep in sync.
+ *
+ * INV-59: `scope` ("mine" | "team", default "mine") governs every section on
+ * the page — no section is exempt, so it resolves once here to a single
+ * `ownerId` (the signed-in user's id, or undefined for "team") and every
+ * query below takes it. Scoping happens in the Prisma `where`, not by
+ * filtering an already-fetched array.
  */
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string; period?: string }>;
+  searchParams: Promise<{ source?: string; period?: string; scope?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const { scope } = scopeSearchParamsCache.parse(params);
 
   const source =
     params.source && isFunnelSource(params.source) ? params.source : undefined;
   const period: Period =
     params.period && isPeriod(params.period) ? params.period : "30d";
 
+  const ownerId = scope === "mine" ? user.id : undefined;
+
   const [funnel, metrics, workQueue, staleDeals] = await Promise.all([
-    getFunnelMetrics({ source }),
-    getDashboardMetrics(period),
-    getWorkQueue(user.id),
-    getStaleDeals(),
+    getFunnelMetrics({ source, ownerId }),
+    getDashboardMetrics(period, ownerId),
+    getWorkQueue(ownerId),
+    getStaleDeals({ ownerId }),
   ]);
 
   return (
@@ -60,11 +69,14 @@ export default async function DashboardPage({
       <PageHeader
         title="Dashboard"
         description={`Signed in as ${user.name}. One chain from first scan to signed engagement.`}
+        actions={<ScopeToggle />}
       />
 
       <div className="grid gap-2">
-        <h2 className="text-sm font-medium">My work today</h2>
-        <WorkQueue queue={workQueue} />
+        <h2 className="text-sm font-medium">
+          {scope === "mine" ? "My work today" : "Team work today"}
+        </h2>
+        <WorkQueue queue={workQueue} scope={scope} />
       </div>
 
       <div className="grid gap-2">

@@ -9,6 +9,8 @@ export type FunnelFilters = {
   source?: Source;
   from?: Date;
   to?: Date;
+  /** INV-59 Mine/Team scope — filters both the snapshot and the StageEvent history to deals owned by this user. */
+  ownerId?: string;
 };
 
 export type FunnelStageMetric = {
@@ -67,6 +69,7 @@ export async function getFunnelMetrics(
 
   const dealWhere: Prisma.DealWhereInput = {};
   if (filters.source) dealWhere.source = filters.source;
+  if (filters.ownerId) dealWhere.ownerId = filters.ownerId;
   if (filters.from || filters.to) {
     const createdAt: Prisma.DateTimeFilter = {};
     if (filters.from) createdAt.gte = filters.from;
@@ -90,7 +93,12 @@ export async function getFunnelMetrics(
   });
 
   const eventWhere: Prisma.StageEventWhereInput = {};
-  if (filters.source) eventWhere.deal = { source: filters.source };
+  if (filters.source || filters.ownerId) {
+    eventWhere.deal = {
+      ...(filters.source ? { source: filters.source } : {}),
+      ...(filters.ownerId ? { ownerId: filters.ownerId } : {}),
+    };
+  }
   if (filters.from || filters.to) {
     const changedAt: Prisma.DateTimeFilter = {};
     if (filters.from) changedAt.gte = filters.from;

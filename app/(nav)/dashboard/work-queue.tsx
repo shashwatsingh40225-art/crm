@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import type { WorkQueue as WorkQueueData } from "@/app/api/dashboard/work-queue/query";
 import { dateFormatter } from "./dashboard-format";
+import type { Scope } from "./scope";
 
 /**
  * INV-37 ("My work today") and INV-36 (next_action / next_action_due
@@ -83,19 +84,46 @@ function QueueRow({
   );
 }
 
-export function WorkQueue({ queue }: { queue: WorkQueueData }) {
+export function WorkQueue({
+  queue,
+  scope,
+}: {
+  queue: WorkQueueData;
+  scope: Scope;
+}) {
   const isEmpty =
     queue.tasks.length === 0 &&
     queue.nextActionDeals.length === 0 &&
     queue.staleDeals.length === 0;
 
   if (isEmpty) {
+    // INV-59: "owns nothing" (no Companies, Deals or Tasks assigned) is a
+    // different empty state from "owns records, none due today" — the
+    // latter is what the fallback below covers, in both scopes.
+    if (scope === "mine" && queue.ownsNothing) {
+      return (
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={Inbox}
+              title="Nothing assigned to you yet"
+              description="You don't own any companies, deals or tasks. Once something is assigned to you, it'll show up here."
+            />
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card>
         <CardContent>
           <EmptyState
             icon={Inbox}
-            title="Nothing needs you today"
+            title={
+              scope === "mine"
+                ? "Nothing needs you today"
+                : "Nothing needs the team today"
+            }
             description="Overdue tasks, deals with a next action due, and stale deals will show up here."
           />
         </CardContent>

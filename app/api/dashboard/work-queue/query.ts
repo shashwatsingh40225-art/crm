@@ -31,6 +31,13 @@ export type WorkQueue = {
   tasks: WorkQueueTask[];
   nextActionDeals: WorkQueueDeal[];
   staleDeals: StaleDeal[];
+  /**
+   * INV-59: true only in Mine scope, when this owner has zero Companies,
+   * Deals and Tasks — distinct from an empty queue where the owner has
+   * records but none are due (or, in Team scope, the pipeline is genuinely
+   * empty). Always false in Team scope (`ownerId` undefined).
+   */
+  ownsNothing: boolean;
 };
 
 function reasonFor(due: Date, now: Date): Reason {
@@ -55,14 +62,19 @@ function taskHref(task: {
   return "/tasks";
 }
 
-export async function getWorkQueue(userId: string): Promise<WorkQueue> {
+/**
+ * `ownerId` is the INV-59 Mine/Team scope. Given, this is "my work today" —
+ * the original behavior. Omitted, it's the whole team's outstanding work,
+ * identical for every viewer.
+ */
+export async function getWorkQueue(ownerId?: string): Promise<WorkQueue> {
   const now = new Date();
   const cutoff = endOfToday(now);
 
-  const [tasks, deals, staleDeals] = await Promise.all([
+  const [tasks, deals, staleDeals, ownedCounts] = await Promise.all([
     prisma.task.findMany({
       where: {
-        ownerId: userId,
+        ...(ownerId ? { ownerId } : {}),
         completedAt: null,
         dueDate: { lte: cutoff },
       },
@@ -78,7 +90,7 @@ export async function getWorkQueue(userId: string): Promise<WorkQueue> {
     }),
     prisma.deal.findMany({
       where: {
-        ownerId: userId,
+        ...(ownerId ? { ownerId } : {}),
         outcome: null,
         nextActionDue: { lte: cutoff },
       },
@@ -90,7 +102,14 @@ export async function getWorkQueue(userId: string): Promise<WorkQueue> {
         company: { select: { name: true } },
       },
     }),
-    getStaleDeals({ ownerId: userId }),
+    getStaleDeals({ ownerId }),
+    ownerId
+      ? Promise.all([
+          prisma.company.count({ where: { ownerId } }),
+          prisma.deal.count({ where: { ownerId } }),
+          prisma.task.count({ where: { ownerId } }),
+        ])
+      : null,
   ]);
 
   return {
@@ -111,5 +130,6 @@ export async function getWorkQueue(userId: string): Promise<WorkQueue> {
       href: `/deals/${d.id}`,
     })),
     staleDeals,
+    ownsNothing: ownedCounts !== null && ownedCounts.every((c) => c === 0),
   };
 }

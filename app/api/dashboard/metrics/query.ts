@@ -25,9 +25,14 @@ function periodStart(period: Period): Date | undefined {
  * Each tile keys off the timestamp that actually means "happened in this
  * period" for that thing: Company.createdAt, Activity.occurredAt,
  * Deal.closedAt — not a single shared date column.
+ *
+ * `ownerId`, when given, is the INV-59 Mine/Team scope: Company/Deal filter
+ * on their own `ownerId`; Activity has no owner field, so "mine" there means
+ * the activity I logged (`createdById`).
  */
 export async function getDashboardMetrics(
   period: Period,
+  ownerId?: string,
 ): Promise<DashboardMetrics> {
   const since = periodStart(period);
 
@@ -37,24 +42,28 @@ export async function getDashboardMetrics(
         where: {
           source: "outbound_scan",
           ...(since ? { createdAt: { gte: since } } : {}),
+          ...(ownerId ? { ownerId } : {}),
         },
       }),
       prisma.activity.count({
         where: {
           type: "email",
           ...(since ? { occurredAt: { gte: since } } : {}),
+          ...(ownerId ? { createdById: ownerId } : {}),
         },
       }),
       prisma.activity.count({
         where: {
           type: "meeting",
           ...(since ? { occurredAt: { gte: since } } : {}),
+          ...(ownerId ? { createdById: ownerId } : {}),
         },
       }),
       prisma.deal.findMany({
         where: {
           outcome: "won",
           ...(since ? { closedAt: { gte: since } } : {}),
+          ...(ownerId ? { ownerId } : {}),
         },
         select: { proposedMrr: true },
       }),
