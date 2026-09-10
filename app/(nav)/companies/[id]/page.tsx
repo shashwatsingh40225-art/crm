@@ -5,8 +5,9 @@ import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailPanel, DetailField } from "@/components/ui/detail-panel";
-import { LifecycleBadge, SourceBadge, IcpFitBadge } from "@/components/ui/badges";
+import { SourceBadge, IcpFitBadge } from "@/components/ui/badges";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
+import { LifecycleStageControl } from "../lifecycle-stage-control";
 
 export const runtime = "nodejs";
 
@@ -43,9 +44,14 @@ export default async function CompanyDetailPage({
         title={company.name}
         description={company.domain ?? undefined}
         actions={
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/companies/${company.id}/edit`}>Edit</Link>
-          </Button>
+          <>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/contacts/new?companyId=${company.id}`}>New contact</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/companies/${company.id}/edit`}>Edit</Link>
+            </Button>
+          </>
         }
       />
 
@@ -57,7 +63,11 @@ export default async function CompanyDetailPage({
           <SourceBadge source={company.source} />
         </DetailField>
         <DetailField label="Lifecycle">
-          <LifecycleBadge stage={company.lifecycleStage} />
+          <LifecycleStageControl
+            entityType="company"
+            entityId={company.id}
+            value={company.lifecycleStage}
+          />
         </DetailField>
         <DetailField label="ICP fit">
           {company.icpFit ? <IcpFitBadge fit={company.icpFit} /> : null}

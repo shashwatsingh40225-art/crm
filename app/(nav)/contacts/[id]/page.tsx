@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailPanel, DetailField } from "@/components/ui/detail-panel";
-import { LifecycleBadge } from "@/components/ui/badges";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
+import { LifecycleStageControl } from "../../companies/lifecycle-stage-control";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,15 @@ export default async function ContactDetailPage({
 
   return (
     <>
-      <PageHeader title={contact.name} description={contact.title ?? undefined} />
+      <PageHeader
+        title={contact.name}
+        description={contact.title ?? undefined}
+        actions={
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/contacts/${contact.id}/edit`}>Edit</Link>
+          </Button>
+        }
+      />
 
       <DetailPanel title="Contact">
         <DetailField label="Company">
@@ -40,7 +49,11 @@ export default async function ContactDetailPage({
         <DetailField label="Email" value={contact.email} />
         <DetailField label="Phone" value={contact.phone} />
         <DetailField label="Lifecycle">
-          <LifecycleBadge stage={contact.lifecycleStage} />
+          <LifecycleStageControl
+            entityType="contact"
+            entityId={contact.id}
+            value={contact.lifecycleStage}
+          />
         </DetailField>
         <DetailField label="Owner" value={contact.owner?.name} />
       </DetailPanel>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +9,14 @@ import { CompanySize, LifecycleStage, Source } from "@prisma/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -24,7 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { companySchema, type CompanyFormValues } from "@/app/api/companies/schema";
+import {
+  companySchema,
+  normalizeDomain,
+  type CompanyFormValues,
+} from "@/app/api/companies/schema";
 
 const SIZE_LABELS: Record<CompanySize, string> = {
   size_1_10: "1–10",
@@ -51,24 +64,34 @@ const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
 };
 
 type OwnerOption = { id: string; name: string };
+type CompanyOption = { id: string; name: string; domain: string | null };
 
 /**
  * Shared by app/(nav)/companies/new and app/(nav)/companies/[id]/edit
  * (INV-17). Same zod schema as the API route - this is presentation only,
  * the server re-validates (CLAUDE.md section 6 / AGENT_CONTRACT.md section 4).
+ *
+ * `existingCompanies` is only passed by the create route - INV-22's dedupe
+ * warning is create-time only, per its own title. Purely a client-side
+ * check against the list already fetched for the page; no dedicated API
+ * endpoint, since "warn, don't block" doesn't need server enforcement.
  */
 export function CompanyForm({
   companyId,
   owners,
+  existingCompanies,
   defaultValues,
 }: {
   /** Present for edit, undefined for create. */
   companyId?: string;
   owners: OwnerOption[];
+  existingCompanies?: CompanyOption[];
   defaultValues?: Partial<CompanyFormValues>;
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [duplicate, setDuplicate] = useState<CompanyOption | null>(null);
+  const pendingValues = useRef<CompanyFormValues | null>(null);
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
@@ -83,7 +106,7 @@ export function CompanyForm({
     },
   });
 
-  async function onSubmit(values: CompanyFormValues) {
+  async function saveCompany(values: CompanyFormValues) {
     setSubmitting(true);
 
     const res = await fetch(
@@ -115,6 +138,26 @@ export function CompanyForm({
     const { data } = await res.json();
     toast.success(companyId ? "Company updated." : "Company created.");
     router.push(`/companies/${data.id}`);
+  }
+
+  async function onSubmit(values: CompanyFormValues) {
+    if (!companyId && existingCompanies && values.domain) {
+      const normalized = normalizeDomain(values.domain);
+      const match = existingCompanies.find(
+        (c) => c.domain && normalizeDomain(c.domain) === normalized,
+      );
+      if (match) {
+        pendingValues.current = values;
+        setDuplicate(match);
+        return;
+      }
+    }
+    await saveCompany(values);
+  }
+
+  function createAnyway() {
+    setDuplicate(null);
+    if (pendingValues.current) void saveCompany(pendingValues.current);
   }
 
   return (
@@ -289,6 +332,35 @@ export function CompanyForm({
           </form>
         </Form>
       </CardContent>
+
+      <Dialog open={duplicate !== null} onOpenChange={(open) => !open && setDuplicate(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>A company with this domain already exists</DialogTitle>
+            <DialogDescription>
+              {duplicate ? (
+                <>
+                  <Link
+                    href={`/companies/${duplicate.id}`}
+                    target="_blank"
+                    className="font-medium underline"
+                  >
+                    {duplicate.name}
+                  </Link>{" "}
+                  already uses this domain. You can still create this record if
+                  it&apos;s a genuinely separate company.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicate(null)}>
+              Cancel
+            </Button>
+            <Button onClick={createAnyway}>Create anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

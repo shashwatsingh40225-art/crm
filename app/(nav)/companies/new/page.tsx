@@ -5,10 +5,10 @@ import { CompanyForm } from "../company-form";
 export const runtime = "nodejs";
 
 export default async function NewCompanyPage() {
-  const owners = await prisma.user.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
+  const [owners, existingCompanies] = await Promise.all([
+    prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.company.findMany({ select: { id: true, name: true, domain: true } }),
+  ]);
 
   return (
     <>
@@ -16,7 +16,7 @@ export default async function NewCompanyPage() {
         title="New company"
         description="Add a prospect or signup's employer to the pipeline."
       />
-      <CompanyForm owners={owners} />
+      <CompanyForm owners={owners} existingCompanies={existingCompanies} />
     </>
   );
 }

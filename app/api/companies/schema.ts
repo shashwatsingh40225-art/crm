@@ -28,3 +28,11 @@ export const companySchema = z.object({
 });
 
 export type CompanyFormValues = z.infer<typeof companySchema>;
+
+/**
+ * INV-22 (SHOULD). "acme.com", "www.acme.com" and "ACME.com" should all
+ * collide for the dedupe warning - lowercase and strip a leading www.
+ */
+export function normalizeDomain(domain: string): string {
+  return domain.trim().toLowerCase().replace(/^www\./, "");
+}
