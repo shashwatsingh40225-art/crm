@@ -5,10 +5,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { DetailPanel, DetailField } from "@/components/ui/detail-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SourceBadge, PlanTierBadge, OutcomeBadge } from "@/components/ui/badges";
+import { StageBadge, SourceBadge, PlanTierBadge, OutcomeBadge } from "@/components/ui/badges";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { NextActionEditor } from "../next-action-editor";
 import { StagePicker } from "../stage-picker";
+import { ClosedBanner } from "../closed-banner";
 import { currencyFormatter, dateFormatter, dateTimeFormatter } from "../deals-format";
 
 export const runtime = "nodejs";
@@ -21,6 +22,11 @@ export const runtime = "nodejs";
  * Stage itself is a picker, not a badge - selecting a new one calls the same
  * gated transition route the board uses (INV-29/30). Tasks is a read-only
  * list - Agent C owns Task mutations and the Tasks section itself.
+ *
+ * INV-31: a closed deal (stage key `closed`) is read-only - no Edit button,
+ * no stage picker (a static badge instead), next action isn't editable -
+ * except for the banner's Reopen action, which returns it to the stage it
+ * was in right before closing.
  */
 export default async function DealDetailPage({
   params,
@@ -68,17 +74,37 @@ export default async function DealDetailPage({
     deal.nextActionDue !== null &&
     deal.nextActionDue.getTime() < Date.now();
 
+  const isClosed = deal.stage.key === "closed";
+  // stageEvents is newest-first, so stageEvents[0] is the transition that
+  // closed this deal (if it's closed) - its fromStageId is where reopen
+  // returns to. Falls back to Scanned only if that's somehow missing.
+  const priorStageId =
+    (isClosed ? stageEvents[0]?.fromStageId : null) ??
+    stages.find((s) => s.key === "scanned")?.id ??
+    stages[0].id;
+
   return (
     <>
       <PageHeader
         title={deal.name}
         description={deal.company.name}
         actions={
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/deals/${deal.id}/edit`}>Edit</Link>
-          </Button>
+          isClosed ? null : (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/deals/${deal.id}/edit`}>Edit</Link>
+            </Button>
+          )
         }
       />
+
+      {isClosed && deal.outcome ? (
+        <ClosedBanner
+          dealId={deal.id}
+          outcome={deal.outcome}
+          lostReason={deal.lostReason}
+          priorStageId={priorStageId}
+        />
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="grid gap-6 lg:col-span-2">
@@ -102,14 +128,18 @@ export default async function DealDetailPage({
               ) : null}
             </DetailField>
             <DetailField label="Stage">
-              <StagePicker
-                dealId={deal.id}
-                companyId={deal.company.id}
-                currentStageId={deal.stageId}
-                stages={stages}
-                owners={owners}
-                contacts={contacts}
-              />
+              {isClosed ? (
+                <StageBadge stage={deal.stage.key} label={deal.stage.name} />
+              ) : (
+                <StagePicker
+                  dealId={deal.id}
+                  companyId={deal.company.id}
+                  currentStageId={deal.stageId}
+                  stages={stages}
+                  owners={owners}
+                  contacts={contacts}
+                />
+              )}
             </DetailField>
             <DetailField label="Source">
               <SourceBadge source={deal.source} />
@@ -148,6 +178,7 @@ export default async function DealDetailPage({
                 nextAction={deal.nextAction}
                 nextActionDue={deal.nextActionDue ? deal.nextActionDue.toISOString() : null}
                 isOverdue={isOverdue}
+                disabled={isClosed}
               />
             </CardContent>
           </Card>

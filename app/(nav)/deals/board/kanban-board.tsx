@@ -12,10 +12,11 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { Lock } from "lucide-react";
 import type { Stage } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import type { ContactOption, OwnerOption } from "../deal-form";
-import { currencyFormatter } from "../deals-format";
+import { currencyFormatter, STALE_DAYS } from "../deals-format";
 import { postStageTransition } from "../stage-transition";
 import { StageGateModal } from "../stage-gate-modal";
 
@@ -28,6 +29,8 @@ export type BoardDeal = {
   proposedMrr: number | null;
   ageInStageDays: number;
   stageId: string;
+  /** Won/Lost - read-only on the board (INV-31); reopen from the deal page. */
+  isClosed: boolean;
 };
 
 type PendingGate = {
@@ -37,8 +40,6 @@ type PendingGate = {
   companyId: string;
   missingFields: Record<string, string[]>;
 };
-
-const STALE_DAYS = 7;
 
 function groupByStage(deals: BoardDeal[]): Record<string, BoardDeal[]> {
   const groups: Record<string, BoardDeal[]> = {};
@@ -210,8 +211,10 @@ function Column({ stage, deals }: { stage: Stage; deals: BoardDeal[] }) {
 }
 
 function Card({ deal }: { deal: BoardDeal }) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: deal.id,
+    disabled: deal.isClosed,
   });
   const isStale = deal.ageInStageDays > STALE_DAYS;
 
@@ -220,16 +223,25 @@ function Card({ deal }: { deal: BoardDeal }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={() => router.push(`/deals/${deal.id}`)}
       style={{
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0.5 : 1,
       }}
       className={cn(
-        "grid cursor-grab gap-1 rounded-lg border bg-card p-2.5 text-sm shadow-sm active:cursor-grabbing",
-        isStale && "border-amber-400 dark:border-amber-600",
+        "grid gap-1 rounded-lg border bg-card p-2.5 text-sm shadow-sm",
+        deal.isClosed
+          ? "cursor-pointer opacity-75"
+          : "cursor-grab active:cursor-grabbing",
+        isStale && !deal.isClosed && "border-amber-400 dark:border-amber-600",
       )}
     >
-      <span className="font-medium">{deal.name}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">{deal.name}</span>
+        {deal.isClosed ? (
+          <Lock className="text-muted-foreground size-3.5 shrink-0" aria-label="Closed - read-only" />
+        ) : null}
+      </div>
       <span className="text-muted-foreground text-xs">{deal.companyName}</span>
       <div className="mt-1 flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{deal.ownerName ?? "Unassigned"}</span>
@@ -237,14 +249,16 @@ function Card({ deal }: { deal: BoardDeal }) {
           <span className="font-medium">{currencyFormatter.format(deal.proposedMrr)}</span>
         ) : null}
       </div>
-      <span
-        className={cn(
-          "text-xs",
-          isStale ? "font-medium text-amber-700 dark:text-amber-500" : "text-muted-foreground",
-        )}
-      >
-        {deal.ageInStageDays}d in stage{isStale ? " · stale" : ""}
-      </span>
+      {!deal.isClosed ? (
+        <span
+          className={cn(
+            "text-xs",
+            isStale ? "font-medium text-amber-700 dark:text-amber-500" : "text-muted-foreground",
+          )}
+        >
+          {deal.ageInStageDays}d in stage{isStale ? " · stale" : ""}
+        </span>
+      ) : null}
     </div>
   );
 }

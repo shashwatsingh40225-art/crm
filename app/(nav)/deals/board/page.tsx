@@ -19,6 +19,7 @@ export default async function DealsBoardPage() {
       include: {
         company: { select: { id: true, name: true } },
         owner: { select: { name: true } },
+        stage: { select: { key: true } },
         stageEvents: { orderBy: { changedAt: "desc" }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
@@ -39,6 +40,7 @@ export default async function DealsBoardPage() {
     proposedMrr: d.proposedMrr ? Number(d.proposedMrr) : null,
     ageInStageDays: ageInDays(d.stageEvents[0]?.changedAt ?? d.createdAt),
     stageId: d.stageId,
+    isClosed: d.stage.key === "closed",
   }));
 
   return (

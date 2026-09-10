@@ -27,6 +27,7 @@ import {
   type StageTransitionFields,
   type StageTransitionResult,
 } from "./stage-transition";
+import { LOST_REASON_CATEGORIES, formatLostReason } from "@/app/api/deals/gates";
 
 const TIER_OPTIONS: { value: PlanTier; label: string }[] = [
   { value: "starter", label: "Starter · $99/mo" },
@@ -46,7 +47,8 @@ type Draft = {
   proposedTier: string;
   proposedMrr: string;
   outcome: string;
-  lostReason: string;
+  lostReasonCategory: string;
+  lostReasonNotes: string;
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -59,7 +61,8 @@ const EMPTY_DRAFT: Draft = {
   proposedTier: "",
   proposedMrr: "",
   outcome: "",
-  lostReason: "",
+  lostReasonCategory: "",
+  lostReasonNotes: "",
 };
 
 /**
@@ -71,6 +74,10 @@ const EMPTY_DRAFT: Draft = {
  * Company-level blockers (ICP fit, findings - both on Company, not Deal)
  * have no input here at all: there's nothing this form can fix, only a link
  * to where it can be fixed.
+ *
+ * Lost reason is a fixed category (INV-31) plus optional free-text notes,
+ * combined into the single `lostReason` string the frozen schema has room
+ * for (see gates.ts for why there's no separate category column).
  */
 export function StageGateModal({
   open,
@@ -134,9 +141,12 @@ export function StageGateModal({
       fillableKeys.includes("outcome") && draft.outcome
         ? (draft.outcome as "won" | "lost")
         : undefined;
+    const categoryLabel = LOST_REASON_CATEGORIES.find(
+      (c) => c.value === draft.lostReasonCategory,
+    )?.label;
     const lostReason =
-      outcome === "lost" || fillableKeys.includes("lostReason")
-        ? draft.lostReason || undefined
+      (outcome === "lost" || fillableKeys.includes("lostReason")) && categoryLabel
+        ? formatLostReason(categoryLabel, draft.lostReasonNotes)
         : undefined;
 
     const result: StageTransitionResult = await postStageTransition(dealId, {
@@ -330,14 +340,34 @@ export function StageGateModal({
 
           {(fillableKeys.includes("outcome") && draft.outcome === "lost") ||
           fillableKeys.includes("lostReason") ? (
-            <div className="grid gap-1.5">
-              <Label>Lost reason</Label>
-              <Input
-                value={draft.lostReason}
-                onChange={(e) => set("lostReason", e.target.value)}
-                placeholder="Why this deal was lost"
-              />
-            </div>
+            <>
+              <div className="grid gap-1.5">
+                <Label>Lost reason</Label>
+                <Select
+                  value={draft.lostReasonCategory}
+                  onValueChange={(v) => set("lostReasonCategory", v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOST_REASON_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Notes (optional)</Label>
+                <Input
+                  value={draft.lostReasonNotes}
+                  onChange={(e) => set("lostReasonNotes", e.target.value)}
+                  placeholder="Any detail worth keeping"
+                />
+              </div>
+            </>
           ) : null}
 
           {errors.error ? <p className="text-destructive text-sm">{errors.error[0]}</p> : null}

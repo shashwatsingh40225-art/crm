@@ -24,9 +24,21 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const existing = await prisma.deal.findUnique({ where: { id } });
+  const existing = await prisma.deal.findUnique({
+    where: { id },
+    include: { stage: true },
+  });
   if (!existing) {
     return Response.json({ error: "Deal not found" }, { status: 404 });
+  }
+
+  // INV-31: closed deals are read-only except for reopen, which goes
+  // through /stage, not this route.
+  if (existing.stage.key === "closed") {
+    return Response.json(
+      { error: "This deal is closed. Reopen it before editing." },
+      { status: 422 },
+    );
   }
 
   const parsed = updateDealSchema.safeParse(await request.json().catch(() => null));

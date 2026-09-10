@@ -1,6 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Lock } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { DealForm } from "../../deal-form";
 
 export const runtime = "nodejs";
@@ -13,7 +17,7 @@ export default async function EditDealPage({
   const { id } = await params;
 
   const [deal, companies, contacts, owners] = await Promise.all([
-    prisma.deal.findUnique({ where: { id } }),
+    prisma.deal.findUnique({ where: { id }, include: { stage: true } }),
     prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.contact.findMany({
       select: { id: true, name: true, companyId: true },
@@ -23,6 +27,27 @@ export default async function EditDealPage({
   ]);
 
   if (!deal) notFound();
+
+  // INV-31: closed deals are read-only except for reopen, which lives on
+  // the detail page's banner, not here. Guards the PATCH route too - this
+  // is belt-and-suspenders so the form doesn't dead-end on submit.
+  if (deal.stage.key === "closed") {
+    return (
+      <>
+        <PageHeader title={`Edit — ${deal.name}`} />
+        <EmptyState
+          icon={Lock}
+          title="This deal is closed"
+          description="Reopen it from the deal page before editing."
+          action={
+            <Button asChild size="sm">
+              <Link href={`/deals/${deal.id}`}>Go to deal</Link>
+            </Button>
+          }
+        />
+      </>
+    );
+  }
 
   return (
     <>

@@ -6,7 +6,7 @@ import type { Source, StageKey } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { StageBadge } from "@/components/ui/badges";
 import { cn } from "@/lib/utils";
-import { currencyFormatter, dateFormatter } from "./deals-format";
+import { currencyFormatter, dateFormatter, STALE_DAYS } from "./deals-format";
 
 /**
  * Serialized deal-list row (INV-25). Dates come across the server/client
@@ -69,7 +69,16 @@ const columns: ColumnDef<DealRow>[] = [
   {
     accessorKey: "ageInStageDays",
     header: "Age in stage",
-    cell: ({ row }) => `${row.original.ageInStageDays}d`,
+    cell: ({ row }) => {
+      const isStale = row.original.ageInStageDays > STALE_DAYS;
+      return (
+        <span
+          className={cn(isStale && "text-amber-700 dark:text-amber-500 font-medium")}
+        >
+          {row.original.ageInStageDays}d{isStale ? " · stale" : ""}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "nextActionDue",

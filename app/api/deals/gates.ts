@@ -56,3 +56,32 @@ export const STAGE_GATE_FIELDS: Partial<Record<StageKey, GateField[]>> = {
 export function icpFitQualifies(fit: IcpFit | null): boolean {
   return fit === "strong" || fit === "moderate";
 }
+
+/**
+ * Fixed lost-reason categories (INV-31). The frozen schema has one
+ * `lostReason: String?` column - no separate category/notes fields, and the
+ * schema is frozen (CLAUDE.md section 8), so a category is encoded as a
+ * literal label prefix on that single string ("Price", "Price — budget
+ * wasn't approved this cycle") rather than as a real enum column. Flagged to
+ * Shashwat as a deliberate encoding choice, not a silent one.
+ */
+export const LOST_REASON_CATEGORIES = [
+  { value: "price", label: "Price" },
+  { value: "timing", label: "Timing" },
+  { value: "no_icp_fit", label: "No ICP fit" },
+  { value: "competitor", label: "Competitor" },
+  { value: "no_response", label: "No response" },
+  { value: "other", label: "Other" },
+] as const;
+
+const LOST_REASON_LABELS = LOST_REASON_CATEGORIES.map((c) => c.label);
+
+/** True if `text` starts with one of the fixed category labels. */
+export function hasLostReasonCategory(text: string | null | undefined): boolean {
+  if (!text) return false;
+  return LOST_REASON_LABELS.some((label) => text.startsWith(label));
+}
+
+export function formatLostReason(categoryLabel: string, notes: string): string {
+  return notes.trim() ? `${categoryLabel} — ${notes.trim()}` : categoryLabel;
+}

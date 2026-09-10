@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { withActor } from "@/lib/audit";
 import { getCurrentUser } from "@/lib/auth";
 import { PLAN_TIER_VALUES } from "../../schema";
-import { STAGE_GATE_FIELDS, icpFitQualifies } from "../../gates";
+import { STAGE_GATE_FIELDS, icpFitQualifies, hasLostReasonCategory } from "../../gates";
 
 export const runtime = "nodejs";
 
@@ -28,16 +28,19 @@ const transitionSchema = z.object({
 });
 
 /**
- * POST /api/deals/[id]/stage (INV-28, INV-29, INV-30).
+ * POST /api/deals/[id]/stage (INV-28, INV-29, INV-30, INV-31).
  *
- * The single gated transition path - the kanban drag (INV-29) and the deal
- * detail page's stage control (INV-26/28) both call this, so there is
- * exactly one place the gate logic and the StageEvent write live. A stage is
- * a business state, not a dropdown value (CLAUDE.md section 4): a forward
- * move whose target stage has missing required fields returns 422 naming
- * them; the same request can supply those fields to complete the move in one
- * action (the blocking modal's "fill and move" flow). Backward moves skip
- * the gate entirely, but still write a StageEvent like any other transition.
+ * The single gated transition path - the kanban drag (INV-29), the deal
+ * detail page's stage control (INV-26/28), and reopen (INV-31) all call
+ * this, so there is exactly one place the gate logic and the StageEvent
+ * write live. A stage is a business state, not a dropdown value (CLAUDE.md
+ * section 4): a forward move whose target stage has missing required fields
+ * returns 422 naming them; the same request can supply those fields to
+ * complete the move in one action (the blocking modal's "fill and move"
+ * flow). Backward moves skip the gate entirely, but still write a
+ * StageEvent like any other transition - reopening a closed deal is a
+ * backward move by position (closed is the highest), so it's covered by the
+ * same branch, not a separate code path.
  */
 export async function POST(
   request: Request,
@@ -85,6 +88,12 @@ export async function POST(
   }
 
   const isBackward = toStage.position < deal.stage.position;
+  // Closed is the highest position, so any move off it is a backward move by
+  // definition - this is INV-31's "reopen", not a normal drag. outcome,
+  // lostReason and closedAt are cleared so the deal doesn't keep reading as
+  // Won/Lost while sitting in an open stage (schema comment on
+  // Deal.outcome: "Null while the deal is still open").
+  const isReopen = deal.stage.key === "closed" && toStage.key !== "closed";
 
   if (!isBackward) {
     const missing: { field: string; label: string }[] = [];
@@ -141,12 +150,15 @@ export async function POST(
       }
     }
 
-    if (
-      toStage.key === "closed" &&
-      mergedValues.outcome === "lost" &&
-      !mergedValues.lostReason
-    ) {
-      missing.push({ field: "lostReason", label: "Lost reason" });
+    if (toStage.key === "closed" && mergedValues.outcome === "lost") {
+      if (!mergedValues.lostReason) {
+        missing.push({ field: "lostReason", label: "Lost reason" });
+      } else if (!hasLostReasonCategory(mergedValues.lostReason as string)) {
+        missing.push({
+          field: "lostReason",
+          label: "Lost reason must start with one of the fixed categories",
+        });
+      }
     }
 
     if (missing.length > 0) {
@@ -173,9 +185,9 @@ export async function POST(
         verenaPlanInterest: body.fields?.verenaPlanInterest,
         proposedTier: body.fields?.proposedTier,
         proposedMrr: body.fields?.proposedMrr,
-        outcome: body.outcome,
-        lostReason: body.lostReason,
-        closedAt: toStage.key === "closed" ? new Date() : undefined,
+        outcome: isReopen ? null : body.outcome,
+        lostReason: isReopen ? null : body.lostReason,
+        closedAt: toStage.key === "closed" ? new Date() : isReopen ? null : undefined,
       },
     });
 

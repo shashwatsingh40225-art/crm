@@ -18,11 +18,14 @@ export function NextActionEditor({
   nextAction,
   nextActionDue,
   isOverdue,
+  disabled,
 }: {
   dealId: string;
   nextAction: string | null;
   nextActionDue: string | null;
   isOverdue: boolean;
+  /** INV-31: closed deals are read-only except for reopen. */
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -78,15 +81,17 @@ export function NextActionEditor({
             </span>
           ) : null}
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Edit next action"
-          onClick={() => setEditing(true)}
-        >
-          <Pencil />
-        </Button>
+        {disabled ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Edit next action"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil />
+          </Button>
+        )}
       </div>
     );
   }
