@@ -1,22 +1,17 @@
-import { CheckSquare } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireUser } from "@/lib/auth";
+import { TasksView } from "./tasks-view";
 
 export const runtime = "nodejs";
 
-/**
- * PLACEHOLDER (INV-9). Agent C replaces this in INV-35.
- * Owned path after the fork: app/(nav)/tasks/**
- */
-export default function TasksPage() {
+/** INV-35. Owned path: app/(nav)/tasks/**. */
+export default async function TasksPage() {
+  const user = await requireUser();
+
   return (
     <>
       <PageHeader title="Tasks" description="What needs a human today." />
-      <EmptyState
-        icon={CheckSquare}
-        title="Task list not built yet"
-        description="INV-35 — Agent C · Activity & Dashboard."
-      />
+      <TasksView currentUserId={user.id} />
     </>
   );
 }
