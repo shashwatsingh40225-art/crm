@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, UploadIcon } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -55,12 +55,20 @@ export default async function CompaniesPage() {
         title="Companies"
         description="Outbound-scanned prospects and inbound signups' employers."
         actions={
-          <Button asChild size="sm">
-            <Link href="/companies/new">
-              <PlusIcon />
-              New company
-            </Link>
-          </Button>
+          <>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/companies/import">
+                <UploadIcon />
+                Import CSV
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/companies/new">
+                <PlusIcon />
+                New company
+              </Link>
+            </Button>
+          </>
         }
       />
       <CompaniesTable data={rows} owners={owners} />
