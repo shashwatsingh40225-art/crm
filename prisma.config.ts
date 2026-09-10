@@ -11,7 +11,11 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   engine: "classic",
+  // CLI only (migrate, status, studio) - the runtime client reads DATABASE_URL
+  // from schema.prisma. DIRECT_URL is the Supabase session pooler (port 5432):
+  // the transaction pooler in DATABASE_URL cannot run migrations, and the
+  // direct db.<ref>.supabase.co host is IPv6-only. See CLAUDE.md section 8.
   datasource: {
-    url: env("DATABASE_URL"),
+    url: env("DIRECT_URL"),
   },
 });

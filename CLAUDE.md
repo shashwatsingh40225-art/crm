@@ -46,12 +46,12 @@ Do not reopen any of these. If you find evidence that contradicts one, say so an
 | D7 | Invictus Counsel — matters, documents, conflicts checking — is **out of scope entirely**. No such tables, routes, or fields. Not a gap; a deliberate boundary. |
 | D8 | MUST scope first. Build beyond it only when the MUSTs are done. |
 | D9 | Foundation and each feature agent run as a **separate Claude Code Desktop session**, one per git worktree. |
-| D10 | Session names map 1:1 to the Linear Owner labels: `foundation`, `agent-a-records`, `agent-b-pipeline`, `agent-c-activity`, and in Phase 2 `agent-d-intake`. |
+| D10 | Session names map 1:1 to the Linear Owner labels: `foundation`, `agent-a-records`, `agent-b-pipeline`, `agent-c-activity`, and in Phase 2 `agent-d-intake` (Linear Owner label `Agent D · Intake`). |
 | D11 | Permission modes and the two `ask` rules. See §11. |
 
 ### Phase 2 cut order if time runs short
 
-Cut in this order: **INV-51, then INV-59, then INV-57, then INV-63.** Never cut **INV-48,
+Cut in this order: **INV-51, then INV-58, then INV-57, then INV-63.** Never cut **INV-48,
 INV-49, INV-60 or INV-61**.
 
 ### Phase 1 cut order (historical)
@@ -195,12 +195,21 @@ detail in `docs/AGENT_CONTRACT.md` §2.
 | **Agent C — Activity & Dashboard** | Activities, tasks, timeline, funnel | `app/(nav)/activities/**`, `app/(nav)/tasks/**`, `app/(nav)/dashboard/**`, `app/api/activities/**`, `app/api/tasks/**` | schema, shared paths, other agents' dirs |
 | **Agent D — Intake** (Phase 2) | Signups, Finding review | `app/api/webhooks/**`, `app/api/findings/**`, `app/(nav)/review/**` | schema, shared paths, other agents' dirs |
 
-**One deliberate exception: Agent D creates a Deal (INV-61).** Deals are normally Agent B's.
-When a scanned prospect is approved, Agent D creates the Deal from its own route under
-`app/api/findings/**`, through the shared Prisma client and inside `withActor` like every
-other mutation. The exception is granted because an approval that cannot admit the prospect
-to the pipeline is meaningless. It stops there: Agent D does not touch `app/(nav)/deals/**`
-or `app/api/deals/**`. This is the only cross-agent exception in the build — anything else
+**One deliberate exception: Agent D writes other agents' models.** From its own routes
+under `app/api/webhooks/**` and `app/api/findings/**` — and nowhere else — Agent D writes
+**Company, Contact, Deal, StageEvent and Activity** rows, through the shared Prisma client
+and inside `withActor` like every other mutation:
+
+- **INV-60 (scan ingest)** creates a Company and its Findings — deliberately no Deal.
+- **INV-61 (approval)** creates a Deal at `Scanned` plus its first StageEvent.
+- **INV-62 (signup)** creates the full chain: Company, Contact, Deal at `Engaged` with
+  `source = inbound_signup`, its first StageEvent with a null `fromStageId`, and an Activity.
+
+The exception is granted because intake is the system's front door, and an intake that
+cannot create the records it ingests is pointless. It covers **models, not directories**:
+Agent D still touches no other agent's files — not `app/(nav)/deals/**`, `app/api/deals/**`,
+`app/(nav)/companies/**`, `app/(nav)/contacts/**`, `app/api/companies/**` or
+`app/api/contacts/**`. This is the only cross-agent exception in the build — anything else
 that looks like one follows the stop-and-report rule below.
 
 **Page routes live inside the `(nav)` route group** so they inherit the authenticated shell
@@ -234,6 +243,13 @@ alone, before the Phase 2 fork: `Company.archivedAt`, `Contact.archivedAt`,
 (`*_phase2_archived_at_and_review_status`). It is **frozen again**. Everything above applies
 unchanged for the rest of Phase 2, to all four agents. Any further field follows the same
 escalation path — stop, report model / field / type / reason, wait.
+
+**Migrations run through the Supabase session pooler.** `DIRECT_URL` in `.env` is the
+session pooler — the same host as `DATABASE_URL`, port **5432**, no `pgbouncer` params — and
+`prisma.config.ts` hands `DIRECT_URL` to the Prisma CLI. The two alternatives both fail from
+this machine: `DATABASE_URL` is the transaction pooler on 6543, which `migrate` cannot use
+(P1017), and the direct host `db.<ref>.supabase.co` is IPv6-only and unreachable (P1001).
+Runtime queries still go through `DATABASE_URL`.
 
 ---
 
@@ -394,6 +410,10 @@ that doesn't exist yet on its branch.
 | 3 | INV-62 | INV-61 |
 
 **Agent D's INV-60 unlocks Agent A's INV-63**, so D's first checkpoint gets reviewed first.
+
+**The `/review` sidebar entry is Foundation's, not Agent D's.** `app/(nav)/nav-items.ts` is
+outside Agent D's directories. Agent D reports the missing entry in its checkpoint;
+Foundation adds it after INV-61 merges — not before, or the demo carries a dead link.
 
 ### INV-36 — scope clarification (confirmed by Shashwat, 9 Sep)
 
