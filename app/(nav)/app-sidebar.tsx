@@ -12,14 +12,22 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, type NavBadge } from "./nav-items";
 import { signOut } from "@/app/login/actions";
 
-export function AppSidebar({ userName }: { userName: string }) {
+export function AppSidebar({
+  userName,
+  badges = {},
+}: {
+  userName: string;
+  /** Computed in the (nav) layout on each server render, not fetched here. */
+  badges?: Partial<Record<NavBadge, number>>;
+}) {
   const pathname = usePathname();
 
   return (
@@ -48,6 +56,7 @@ export function AppSidebar({ userName }: { userName: string }) {
                 const isActive =
                   pathname === item.href ||
                   pathname.startsWith(`${item.href}/`);
+                const count = item.badge ? (badges[item.badge] ?? 0) : 0;
 
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -61,6 +70,11 @@ export function AppSidebar({ userName }: { userName: string }) {
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
+                    {count > 0 ? (
+                      <SidebarMenuBadge data-testid={`nav-badge-${item.badge}`}>
+                        {count}
+                      </SidebarMenuBadge>
+                    ) : null}
                   </SidebarMenuItem>
                 );
               })}

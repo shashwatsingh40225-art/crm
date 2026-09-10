@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { requireUser } from "@/lib/auth";
 import { AppSidebar } from "./app-sidebar";
 import { NavBreadcrumb } from "./nav-breadcrumb";
+import { getPendingReviewCount } from "./review/queue";
 
 export const runtime = "nodejs";
 
@@ -32,11 +33,15 @@ export default async function NavLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
+  // Agent D's own query (INV-61), not a copy of its where clause, so the
+  // badge and the /review queue cannot drift. Re-runs whenever the layout
+  // re-renders - including router.refresh() after an approve or reject.
+  const pendingReview = await getPendingReviewCount();
 
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
-        <AppSidebar userName={user.name} />
+        <AppSidebar userName={user.name} badges={{ pendingReview }} />
         <SidebarInset>
           <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
