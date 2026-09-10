@@ -1,8 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Routes reachable without a session. Everything else redirects to /login. */
-const PUBLIC_PATHS = ["/login", "/auth"];
+/**
+ * Routes reachable without a session. Everything else redirects to /login.
+ *
+ * `/api/webhooks` (INV-65): machine-to-machine intake. A scanner or signup
+ * webhook has no Supabase session; each route authenticates with its own
+ * bearer token instead. `/api/findings` is deliberately NOT here - approvals
+ * are human actions and must record who approved (INV-61).
+ */
+const PUBLIC_PATHS = ["/login", "/auth", "/api/webhooks"];
 
 /**
  * Refreshes the Supabase session cookie and enforces the redirect for
