@@ -44,6 +44,10 @@ export function DetailPanel({
  * One label/value pair. Pass `value` for text, or children for a badge or any
  * other node. An empty value renders a muted em dash rather than collapsing,
  * so the field grid stays aligned.
+ *
+ * `children == null` (INV-50) catches both undefined and null, so the common
+ * `{x ? <Badge /> : null}` gets the dash instead of a blank cell. Deliberately
+ * not a falsy check: an empty-string child is a real value and renders as-is.
  */
 export function DetailField({
   label,
@@ -57,7 +61,7 @@ export function DetailField({
   className?: string;
 }) {
   const hasValue =
-    children !== undefined || (value !== null && value !== undefined && value !== "");
+    children != null || (value !== null && value !== undefined && value !== "");
 
   return (
     <div className={cn("grid gap-1", className)}>
