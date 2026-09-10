@@ -20,3 +20,8 @@ export const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   timeStyle: "short",
   timeZone: "UTC",
 });
+
+/** Whole days between `from` and now, floored, never negative. */
+export function ageInDays(from: Date): number {
+  return Math.max(0, Math.floor((Date.now() - from.getTime()) / 86_400_000));
+}

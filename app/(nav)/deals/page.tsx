@@ -1,10 +1,14 @@
-import { Handshake } from "lucide-react";
+import Link from "next/link";
+import { Handshake, Plus } from "lucide-react";
 import type { Prisma, Source } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { DealsFilters } from "./deals-filters";
 import { DealsTable, type DealRow } from "./deals-table";
+import { DealsViewTabs } from "./deals-view-tabs";
+import { ageInDays } from "./deals-format";
 
 export const runtime = "nodejs";
 
@@ -55,17 +59,13 @@ export default async function DealsPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const now = Date.now();
   const rows: DealRow[] = deals.map((d) => {
     const enteredStageAt = d.stageEvents[0]?.changedAt ?? d.createdAt;
-    const ageInStageDays = Math.max(
-      0,
-      Math.floor((now - enteredStageAt.getTime()) / 86_400_000),
-    );
+    const ageInStageDays = ageInDays(enteredStageAt);
     const isOverdue =
       !d.outcome &&
       d.nextActionDue !== null &&
-      d.nextActionDue.getTime() < now;
+      d.nextActionDue.getTime() < Date.now();
 
     return {
       id: d.id,
@@ -87,7 +87,15 @@ export default async function DealsPage({
       <PageHeader
         title="Deals"
         description="One pipeline, seven gated stages, both motions."
+        actions={
+          <Button asChild size="sm">
+            <Link href="/deals/new">
+              <Plus /> New deal
+            </Link>
+          </Button>
+        }
       />
+      <DealsViewTabs />
       <DealsFilters stages={stages} owners={owners} />
       <DealsTable
         deals={rows}
