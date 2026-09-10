@@ -158,9 +158,10 @@ every empty list rather than writing a bare "No results".
 
 ## 5. `<ActivityTimeline>` — `activity-timeline.tsx`
 
-**Stub. Agent C owns the implementation (INV-34). The signature below is final
-and must not change** — Agents A and B render it on their detail pages, so a
-signature change breaks two agents at merge.
+**Implemented by Agent C under INV-34** — it was a Foundation stub so Agents A
+and B were never blocked on it. **The signature below is final and must not
+change**: Agents A and B render it on their detail pages, so a signature change
+breaks two features at once.
 
 ```ts
 type ActivityTimelineProps = {

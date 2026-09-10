@@ -34,8 +34,8 @@ _Avoid_: History, audit event (AuditEvent is a separate, broader entity covering
 **Activity**:
 A logged interaction — call, email, meeting, or note — against a Company, Contact, or Deal.
 
-**Finding** _(stretch scope only)_:
-An observation from the outbound scanner about a Company's compliance posture, with a confidence score. Belongs to the scan-ingestion stretch feature, not the core pipeline.
+**Finding**:
+An observation from the outbound scanner about a Company's compliance posture, with a confidence score. The **table** is core and is seeded — the stage-1 gate requires at least one Finding before a prospect can leave `Scanned`. The **scan-ingestion feature** that would create Findings automatically (INV-42 → INV-45) is stretch and was not built; seeded Findings are the only ones that exist.
 
 **Verena**:
 The product being sold. This CRM never stores Verena's compliance findings or agent output as content — only that an event happened (signup, plan change).

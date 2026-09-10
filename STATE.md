@@ -1,26 +1,28 @@
 # STATE — Read this first
 
 **Project:** Invictus CRM (Verena self-launch)
-**Last updated:** 9 September 2026, 13:45 IST
-**Phase:** Planning complete. Linear board built. Reuse research closed. **No code written yet.**
+**Last updated:** 10 September 2026, 16:13 IST
+**Phase:** **Build complete and pushed.** Foundation plus all three feature agents merged to `main`. INV-5 → INV-41 all have code on the remote. Nothing has been walked through by hand yet.
 
-> **Clock:** the assignment was set on 9 Sep IST. 48 hours puts the deadline somewhere on **10–11 Sep**; the exact start hour is unconfirmed, so assume the earlier end of that range. Roughly **36–40 hours remain**, of which perhaps 25–30 are workable after sleep.
+> **Clock:** the assignment was set on 9 Sep IST; 48 hours puts the deadline on 10–11 Sep. The build is done and on `main`. What remains is verification, the written submission and the screen recording — not more code.
 >
-> Everything planning-side is finished. The next block should produce code, not another document.
+> **The gap that matters:** every ticket was committed, built and pushed, but **nothing has been exercised**. The stage gate returning 422, a kanban drag writing a StageEvent, a CSV import round-trip, the funnel dashboard rendering — all compile, none have been watched running. Verification is the next block, not new features.
 
 ---
 
 ## 1. How to use the docs in this project
 
+**In this repo** — these are the ones a coding session reads:
+
 | Doc | What it's for | Status |
 |---|---|---|
-| **`docs/STATE.md`** (this file) | Orientation. Current state, decisions, what's next. | **Current — start here** |
-| `docs/CRM_BUILD_PLAN.md` | The execution spec: MVP scope, pipeline design, data model, agent split, 48h schedule, Linear structure | **Current — the working spec** |
-| `docs/RESEARCH_DISCOVERY_REPORT.md` | Background research on Invictus, Verena, Counsel, CRM architecture patterns | Current as research. §15 and §20 superseded — see §8 below |
-| `docs/PROJECT_MANDATE_AND_PLAN.md` | Earlier mandate draft | **Largely superseded** — see §8 |
-| `handoff/*.md` (5 files) | Brief given to the separate CRM reuse research project | Closed — findings in §11 |
+| **`STATE.md`** (this file) | Orientation. Current state, decisions, what's next. | **Current — start here** |
+| `CLAUDE.md` | The build contract: locked decisions, frozen data model, pipeline gates, audit rules, file ownership, checkpoint discipline | **Current — authoritative for code** |
+| `CONTEXT.md` | Vocabulary. What a Company, Deal, Stage, StageEvent, Finding actually mean here | Current |
+| `docs/AGENT_CONTRACT.md` | The interfaces Foundation built: shared Prisma client, audit helpers, UI primitives, `<ActivityTimeline>` | Current |
+| `docs/adr/0001`, `docs/adr/0002` | Decisions expensive to reverse: scaffolding-not-planning docs; cross-agent reads via shared Prisma | Current |
 
-Also on disk in the session workspace: `linear_issues.csv` (the 41 issues; already created in Linear, kept as a backup).
+**Not in this repo** — the planning artifacts live in the session workspace, not under version control: `CRM_BUILD_PLAN.md` (the execution spec), `RESEARCH_DISCOVERY_REPORT.md` (§15 and §20 superseded — see §8 below), `PROJECT_MANDATE_AND_PLAN.md` (largely superseded), `handoff/*.md` (closed — findings in §11), and `linear_issues.csv` (the 41 issues, already in Linear, kept as a backup).
 
 ---
 
@@ -55,20 +57,33 @@ The interviewer handed him the exact two gaps he admitted to. This is a rebuttal
 - Scope, pipeline design, data model and agent split decided
 - Linear workspace fully built — see §6
 - Open-source reuse research commissioned, run and closed — see §11
+- `CLAUDE.md` and the three agent kickoff prompts written
+- **Foundation (INV-5 → INV-14)** — scaffold, Supabase + Prisma, frozen schema and migration, auth, app shell, shared UI primitives, audit log, seed, deploy
+- **Agent A · Records (INV-15 → INV-23)**, **Agent B · Pipeline (INV-24 → INV-32)**, **Agent C · Activity and Dashboard (INV-33 → INV-41)** — all merged to `main` and pushed
+- 24 commits on `main`; `npm run build` clean on turbopack, 37 routes
 
 **Not started**
-- Any code
-- `CLAUDE.md` and the three agent kickoff prompts
+- **Verification of any feature by hand** — see the Clock note above. This is the real gap
 - The written submission and screen recording
 - The two manual Linear items (initiative, cycles) — see §6
+- Stretch scope INV-42 → INV-45 (outbound scan ingestion) — never started, cancel with a one-line reason rather than leaving open
 
-**Immediate next step:** write `CLAUDE.md` plus three agent kickoff prompts (file ownership, shared contract, audit rule per §11.1, and the stop-don't-touch-schema instruction), then start Foundation (INV-5 → INV-14).
+**Immediate next step:** walk the app against the acceptance criteria, ticket by ticket, and move the Linear board to match what actually works. Then the written submission.
 
 ### Honest read on where the time has gone
 
-Planning is not just done, it is **over-done**. Four planning documents, a 41-issue board, and a commissioned research project exist; zero lines of code exist. Every one of those artifacts is defensible on its own and the board genuinely is the primary deliverable — but the marginal value of more planning is now negative, and a submission with a beautiful board and a half-built app is weaker than one with a good board and a working app.
+The original entry here said planning was over-done and the next block had to produce code. That happened — the whole board's worth of code exists and is on the remote.
 
-**Rule for the remainder: no new planning documents.** Update this file when state changes; write nothing else that is not code, the agent prompts, or the final written submission. If a future session is asked for another framework, register, or analysis, the right answer is to point at this section and ask whether it beats writing code with the same hour.
+The failure mode has now inverted. Everything was committed, built and pushed without anyone opening a page. "It compiles" is not "it works", and the differentiating claims in this submission — enforced stage gates, StageEvent on every transition, a funnel that reads as one chain — are exactly the ones that are worthless if they turn out to be broken in the browser. **A verified smaller claim beats an unverified larger one.**
+
+**Rule for the remainder: no new features and no new planning documents.** Verify, fix what verification breaks, write the submission. If a future session is asked for another framework, register, or analysis, point at this section and ask whether it beats verifying one more ticket with the same hour.
+
+### Known open items in the build
+
+- **Two audit-probe rows are in the database** — a Company and a Task, both named "Audit Probe …", created during a runtime check of the audit actor. They appear in the companies list and the work queue. Delete before recording anything.
+- **Vercel Preview env vars were never set** (CLI v53.2.0 bug). Production and development are set. A preview-context build will fail on a missing `DATABASE_URL`.
+- **`STALE_DAYS` and `ageInDays` live in `app/(nav)/deals/deals-format.ts`** — Agent B's directory — but the dashboard imports them. It builds, but the constant belongs in shared code if anyone keeps building.
+- **All three agents ran in one working tree**, not the separate worktrees D9 called for. The commits stayed cleanly separable because the path groups happened not to overlap. That was luck, not isolation. Fork properly next time.
 
 ---
 
@@ -222,16 +237,19 @@ The larger "35–50 hours saved" figure in the report is the saving from *using 
 
 ## 12. Open items
 
-**Blocking the build**
-- `CLAUDE.md` and three agent kickoff prompts — needed before the worktrees fork. The only thing between here and Foundation.
+**Blocking the submission**
+- **Walk the app and verify.** Log in at the deployed URL, then: fail a stage gate and confirm the 422 lists the missing fields inline; drag a card on the kanban and confirm a StageEvent was written; close a deal Lost and confirm the reason is captured; import a CSV; open the funnel dashboard. Nothing in this build has been exercised.
+- **Confirm the Vercel deploy is green** on the current `main` — it moved 12 commits in one session and was last confirmed loading at Foundation.
+- **Move the Linear board to match reality**, ticket by ticket, based on what verification actually shows.
 
 **Two minutes of clicking, do them next time Linear is open**
 - Create the initiative `Verena Self-Launch CRM` and attach all six projects
 - Enable cycles, set length to 1 day, name them `Day 1 — Foundation & Core` and `Day 2 — Funnel & Polish`
 - Assign all 41 issues to yourself so "My Issues" is populated
+- Cancel INV-42 → INV-45 (stretch, outbound scan ingestion) with a one-line reason — never started
 
-**Worth 20 minutes, once, before the schema freezes**
-- Click around Linear by hand — create an issue, drag one between statuses, build a filtered view. The board is currently ahead of the hands-on familiarity, and the follow-up conversation will test the familiarity, not the artifact. "Claude set it up" is a bad answer to "why did you group the labels?"
+**Worth 20 minutes, once, before the follow-up conversation**
+- Click around Linear by hand — create an issue, drag one between statuses, build a filtered view. The board is ahead of the hands-on familiarity, and the follow-up conversation will test the familiarity, not the artifact. "Claude set it up" is a bad answer to "why did you group the labels?"
 
 **Unconfirmed**
 - Exact submission format and channel
