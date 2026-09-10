@@ -1,7 +1,8 @@
 # CLAUDE.md — Invictus CRM (Verena Self-Launch)
 
 Every Claude Code session working in this repo reads this file. It is the shared contract
-between the Foundation session and the three parallel feature agents. If something here
+between the Foundation session and the parallel feature agents (three in Phase 1, four in
+Phase 2). If something here
 conflicts with what you think is right, **stop and ask Shashwat** — do not resolve it yourself.
 
 **Also read:** `CONTEXT.md` (vocabulary — what a Company, Deal, Stage, StageEvent actually
@@ -40,15 +41,20 @@ Do not reopen any of these. If you find evidence that contradicts one, say so an
 | D2 | Stack: **Next.js 15 + TypeScript + Tailwind + shadcn/ui + Supabase Postgres + Prisma**, deployed on Vercel. One repo, one deploy. |
 | D3 | **One pipeline serves both motions.** Outbound-scanned prospects enter at `Scanned`; inbound self-serve signups enter at `Engaged` with `source = inbound_signup`. There is no second pipeline. |
 | D4 | **Lifecycle stage is a field on Company and Contact. There is no Lead object.** HubSpot's model, not Salesforce's — it avoids duplicate identity and split activity history at conversion. Do not introduce a `Lead` model, table, route, or type. |
-| D5 | Three parallel agents split **by feature, not by layer**. See §7. |
+| D5 | Parallel agents split **by feature, not by layer** — three in Phase 1, four in Phase 2. See §7. |
 | D6 | **The schema is frozen before the fork. Only Shashwat unfreezes it.** See §8. |
 | D7 | Invictus Counsel — matters, documents, conflicts checking — is **out of scope entirely**. No such tables, routes, or fields. Not a gap; a deliberate boundary. |
 | D8 | MUST scope first. Build beyond it only when the MUSTs are done. |
 | D9 | Foundation and each feature agent run as a **separate Claude Code Desktop session**, one per git worktree. |
-| D10 | Session names map 1:1 to the Linear Owner labels: `foundation`, `agent-a-records`, `agent-b-pipeline`, `agent-c-activity`. |
+| D10 | Session names map 1:1 to the Linear Owner labels: `foundation`, `agent-a-records`, `agent-b-pipeline`, `agent-c-activity`, and in Phase 2 `agent-d-intake`. |
 | D11 | Permission modes and the two `ask` rules. See §11. |
 
-### Cut order if time runs short
+### Phase 2 cut order if time runs short
+
+Cut in this order: **INV-51, then INV-59, then INV-57, then INV-63.** Never cut **INV-48,
+INV-49, INV-60 or INV-61**.
+
+### Phase 1 cut order (historical)
 
 Exhaust **every SHOULD before touching any MUST**, in this order: CSV import → company
 dedupe → stalled-deals widget → lost-reason capture. Then the Stretch items. The funnel
@@ -64,13 +70,13 @@ Vocabulary and meaning live in `CONTEXT.md`. This is the shape.
 ```
 User        id, email, name, role, auth_user_id, created_at, updated_at
 Company     id, name, domain, industry, size, source, icp_fit,
-            lifecycle_stage, owner_id, created_at, updated_at
+            lifecycle_stage, owner_id, archived_at, created_at, updated_at
 Contact     id, company_id, name, email, title, phone,
-            lifecycle_stage, owner_id, created_at, updated_at
+            lifecycle_stage, owner_id, archived_at, created_at, updated_at
 Deal        id, company_id, primary_contact_id, name, stage_id,
             source, last_outreach_at, verena_plan_interest,
             proposed_tier, proposed_mrr, next_action, next_action_due,
-            outcome, lost_reason, closed_at, owner_id,
+            outcome, lost_reason, closed_at, owner_id, archived_at,
             created_at, updated_at
 Pipeline    id, name, created_at
 Stage       id, pipeline_id, key, name, position, probability
@@ -80,7 +86,7 @@ Activity    id, type, subject, body, company_id?, contact_id?,
 Task        id, title, due_date, owner_id, completed_at,
             company_id?, contact_id?, deal_id?, created_at, updated_at
 Finding     id, company_id, framework, observation, evidence_url,
-            confidence, reviewed_by, reviewed_at, created_at
+            confidence, review_status, reviewed_by, reviewed_at, created_at
 AuditEvent  id, entity_type, entity_id, action, actor_id,
             before, after, created_at
 ```
@@ -88,7 +94,12 @@ AuditEvent  id, entity_type, entity_id, action, actor_id,
 Prisma fields are camelCase (`deal.nextActionDue`); columns are the snake_case names above.
 `Stage.key` is the stable handle the gate reads — never `Stage.name`, or renaming a stage in
 the UI silently disables its entry criteria. The `Finding` **table** exists because the
-stage-1 gate requires ≥1 finding; the Findings **feature** is still stretch.
+stage-1 gate requires ≥1 finding.
+
+**Phase 2 additions (INV-48):** `archived_at` on Company, Contact and Deal, and
+`review_status` (`pending | approved | rejected`, default `pending`) on Finding. Companies,
+Contacts and Deals are removed by setting `archived_at`, **never by deleting the row** —
+`onDelete: Cascade` would take everything under them with it. See ADR 0003.
 
 **StageEvent is append-only.** Never update or delete a StageEvent row. A correction is a
 new transition, not an edited history.
@@ -182,6 +193,15 @@ detail in `docs/AGENT_CONTRACT.md` §2.
 | **Agent A — Records** | Companies, Contacts | `app/(nav)/companies/**`, `app/(nav)/contacts/**`, `app/api/companies/**`, `app/api/contacts/**` | schema, shared paths, other agents' dirs |
 | **Agent B — Pipeline** | Deals, stages, board | `app/(nav)/deals/**`, `app/api/deals/**`, `app/api/stages/**` | schema, shared paths, other agents' dirs |
 | **Agent C — Activity & Dashboard** | Activities, tasks, timeline, funnel | `app/(nav)/activities/**`, `app/(nav)/tasks/**`, `app/(nav)/dashboard/**`, `app/api/activities/**`, `app/api/tasks/**` | schema, shared paths, other agents' dirs |
+| **Agent D — Intake** (Phase 2) | Signups, Finding review | `app/api/webhooks/**`, `app/api/findings/**`, `app/(nav)/review/**` | schema, shared paths, other agents' dirs |
+
+**One deliberate exception: Agent D creates a Deal (INV-61).** Deals are normally Agent B's.
+When a scanned prospect is approved, Agent D creates the Deal from its own route under
+`app/api/findings/**`, through the shared Prisma client and inside `withActor` like every
+other mutation. The exception is granted because an approval that cannot admit the prospect
+to the pipeline is meaningless. It stops there: Agent D does not touch `app/(nav)/deals/**`
+or `app/api/deals/**`. This is the only cross-agent exception in the build — anything else
+that looks like one follows the stop-and-report rule below.
 
 **Page routes live inside the `(nav)` route group** so they inherit the authenticated shell
 (sidebar, header, breadcrumb, `requireUser()` gate) — `/login` must not inherit it, which is
@@ -207,6 +227,13 @@ The schema is committed and pushed by Foundation before any agent forks. After t
   model, which field, which type, and why.** He makes the change in the Foundation session,
   pushes, and tells the other agents to pull. Two minutes. The failure mode this prevents is
   three agents each generating a conflicting migration.
+
+**Phase 2 unfreeze window (INV-48, 10 Sep).** The freeze was lifted once, by Foundation
+alone, before the Phase 2 fork: `Company.archivedAt`, `Contact.archivedAt`,
+`Deal.archivedAt` and `Finding.reviewStatus`, in a single migration
+(`*_phase2_archived_at_and_review_status`). It is **frozen again**. Everything above applies
+unchanged for the rest of Phase 2, to all four agents. Any further field follows the same
+escalation path — stop, report model / field / type / reason, wait.
 
 ---
 
@@ -251,7 +278,7 @@ install it. A stray dependency in one worktree breaks the other three at merge.
 **`foundation` runs Manual.** Schema, auth and audit are the highest-stakes work in the build
 and every action gets looked at.
 
-**The three feature sessions run Auto mode**, plus two explicit `ask` rules in
+**The feature sessions run Auto mode**, plus two explicit `ask` rules in
 `.claude/settings.json`. Auto mode's classifier approves routine work — including merges and
 pushes to `main`, and edits to any file — without prompting Shashwat at all, which would
 silently break both D6 and his review flow. Explicit `ask` rules are **never auto-approved in
@@ -293,7 +320,16 @@ Checkpoints are tied to **logical ticket slices**, not to the clock. Slices belo
 from the real Linear dependency graph.
 
 A session only acts when given a task. Within a task, chain through the whole slice without
-stopping unless you are blocked or an `ask` rule fires. **At the end of each slice:**
+stopping unless you are blocked or an `ask` rule fires.
+
+Linear actions are reported **twice per slice** — once at the start, once at the end.
+
+**When a slice is handed over, before writing any code:** post a `Linear: starting` line
+naming each ticket in the slice that Shashwat should move to **In Progress**, in plain
+words — e.g. `Linear: starting — move INV-52 to In Progress.` Required every slice, even a
+one-ticket slice. You never make the change yourself — only name it.
+
+**At the end of each slice:**
 
 1. Stop.
 2. Write a **plain-text summary** — what you built, checked against each ticket's acceptance
@@ -312,39 +348,52 @@ stopping unless you are blocked or an `ask` rule fires. **At the end of each sli
 
 Do not merge to `main` on your own initiative.
 
-### Agent A — Records (INV-15 → 23) — fully self-contained, no cross-agent dependency
+### Phase 2 slices
 
-| Slice | Tickets | Pts | Notes |
-|---|---|---|---|
-| A1 | INV-15, INV-17, INV-18 | 9 | Blocked only by Foundation — the true starting set |
-| A2 | INV-16, INV-19 | 8 | Detail pages, unlocked by A1 |
-| A3 | INV-20, INV-21, INV-22 | 9 | INV-21 is lifecycle-stage — D4 made real. Summarize it carefully |
-| A4 | INV-23 | 3 | SHOULD — last, per the cut order |
+**Foundation goes first.** INV-48 (the Phase 2 migration) lands on `main` before any agent
+forks — nothing forks until it does. Foundation then runs INV-49, INV-50 and INV-51 while
+the four agents work.
 
-### Agent B — Pipeline (INV-24 → 32) — a long sequential chain; **Agent C depends on it**
+Within each agent the order is sequential. Each ticket is one slice — one `Linear: starting`
+line, one checkpoint — unless Shashwat hands over several at once.
 
-| Slice | Tickets | Pts | Notes |
-|---|---|---|---|
-| B1 | INV-24, INV-25 | 5 | Seed pipeline + deal list |
-| B2 | INV-26, INV-27 | 8 | Deal detail + create/edit. **Unlocks Agent C's INV-36** |
-| B3 | INV-28, INV-29, INV-30 | 13 | StageEvent, kanban, stage-gate enforcement — the pipeline-literacy core. **Unlocks Agent C's INV-38** |
-| B4 | INV-31, INV-32 | 5 | SHOULD + stale indicator. **Unlocks Agent C's INV-37 and INV-41** |
+### Agent A — Records
 
-**Agent B is the critical path.** When B merges a slice, Agent C's next slice unblocks —
-so B's checkpoints get reviewed first.
+| Order | Ticket | Gated on |
+|---|---|---|
+| 1 | INV-52 | INV-48 on `main` |
+| 2 | INV-53 | INV-52 |
+| 3 | INV-54 | INV-53 |
+| 4 | INV-63 | **INV-60 merged** (Agent D) |
 
-### Agent C — Activity & Dashboard (INV-33 → 41) — two-phase, gated on Agent B
+**Agent A must not start INV-63 until Agent D's INV-60 has merged** and Shashwat hands it
+over. The failure mode is Agent A reaching into `app/api/webhooks/**` to get at something
+that doesn't exist yet on its branch.
 
-| Slice | Tickets | Pts | Gated on |
-|---|---|---|---|
-| C1 | INV-33, INV-34, INV-35 | 11 | Foundation only — start immediately |
-| C2 | INV-36 | 3 | **B2 merged** (needs INV-26) |
-| C3 | INV-38, INV-39, INV-40 | 11 | **B3 merged** (needs INV-28) |
-| C4 | INV-37, INV-41 | 8 | **B4 merged** (needs INV-32); INV-41 is SHOULD |
+### Agent B — Pipeline
 
-**Agent C is given C1 only at kickoff.** C2–C4 are handed over by Shashwat as Agent B's
-corresponding slices actually merge. Agent C must not start a gated slice early — the
-failure mode is it reaching into `app/deals/**` to get at data whose route doesn't exist yet.
+| Order | Ticket | Gated on |
+|---|---|---|
+| 1 | INV-55 | INV-48 on `main` |
+| 2 | INV-56 | INV-55 |
+| 3 | INV-57 | INV-56 |
+
+### Agent C — Activity & Dashboard
+
+| Order | Ticket | Gated on |
+|---|---|---|
+| 1 | INV-59 | INV-48 on `main` |
+| 2 | INV-58 | INV-59 |
+
+### Agent D — Intake
+
+| Order | Ticket | Gated on |
+|---|---|---|
+| 1 | INV-60 | INV-48 on `main` |
+| 2 | INV-61 | INV-60 |
+| 3 | INV-62 | INV-61 |
+
+**Agent D's INV-60 unlocks Agent A's INV-63**, so D's first checkpoint gets reviewed first.
 
 ### INV-36 — scope clarification (confirmed by Shashwat, 9 Sep)
 
@@ -363,8 +412,9 @@ the deal page stays Agent B's, delivered under INV-26.
 ## 13. Linear discipline
 
 - **Agents never write to Linear.** Not status, not comments, not sub-issues.
-- Every checkpoint ends with the **Linear actions** section required by §12 — plain
-  language, ticket by ticket, telling Shashwat exactly what to move where. Narration only;
+- Every slice opens with the `Linear: starting` line and every checkpoint ends with the
+  **Linear actions** section, both required by §12 — plain language, ticket by ticket,
+  telling Shashwat exactly what to move where. Narration only;
   even if a Linear MCP tool is reachable, the agent does not use it to make the change.
 - Ticket numbers appear in commit messages (`INV-26: deal create/edit form`) so the trail is
   readable, and that is the only place an agent refers to a ticket outside its summaries.

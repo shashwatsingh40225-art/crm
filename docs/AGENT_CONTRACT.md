@@ -183,6 +183,7 @@ inherit it:
 - Agent A — `app/(nav)/companies/**`, `app/(nav)/contacts/**`
 - Agent B — `app/(nav)/deals/**`
 - Agent C — `app/(nav)/dashboard/**`, `app/(nav)/tasks/**`, `app/(nav)/activities/**`
+- Agent D (Phase 2) — `app/(nav)/review/**`
 
 API routes are unaffected: `app/api/<section>/**` as in CLAUDE.md §7.
 
