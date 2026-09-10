@@ -16,6 +16,8 @@ export default async function DealsBoardPage() {
   const [stages, deals, contacts, owners] = await Promise.all([
     prisma.stage.findMany({ orderBy: { position: "asc" } }),
     prisma.deal.findMany({
+      // Archived deals never occupy a board column (INV-56 / ADR 0003).
+      where: { archivedAt: null },
       include: {
         company: { select: { id: true, name: true } },
         owner: { select: { name: true } },

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
 import { DetailPanel, DetailField } from "@/components/ui/detail-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StageBadge, SourceBadge, PlanTierBadge, OutcomeBadge } from "@/components/ui/badges";
@@ -10,6 +9,7 @@ import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { NextActionEditor } from "../next-action-editor";
 import { StagePicker } from "../stage-picker";
 import { ClosedBanner } from "../closed-banner";
+import { DealActions } from "../deal-actions";
 import { currencyFormatter, dateFormatter, dateTimeFormatter } from "../deals-format";
 
 export const runtime = "nodejs";
@@ -35,8 +35,10 @@ export default async function DealDetailPage({
 }) {
   const { id } = await params;
 
-  const deal = await prisma.deal.findUnique({
-    where: { id },
+  // Archived deals aren't findUnique-able by a plain where without dropping
+  // to findFirst - excluded so a deleted deal's URL 404s (INV-56 / ADR 0003).
+  const deal = await prisma.deal.findFirst({
+    where: { id, archivedAt: null },
     include: {
       company: { select: { id: true, name: true } },
       primaryContact: { select: { id: true, name: true } },
@@ -89,11 +91,13 @@ export default async function DealDetailPage({
         title={deal.name}
         description={deal.company.name}
         actions={
-          isClosed ? null : (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/deals/${deal.id}/edit`}>Edit</Link>
-            </Button>
-          )
+          <DealActions
+            dealId={deal.id}
+            dealName={deal.name}
+            stageName={deal.stage.name}
+            proposedMrr={deal.proposedMrr ? Number(deal.proposedMrr) : null}
+            isClosed={isClosed}
+          />
         }
       />
 

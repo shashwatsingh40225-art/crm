@@ -86,3 +86,38 @@ export async function PATCH(
 
   return Response.json({ data: updated });
 }
+
+/**
+ * DELETE /api/deals/[id] (INV-56).
+ *
+ * Soft delete only (ADR 0003) - sets `archivedAt`, never removes the row.
+ * StageEvent is append-only (CLAUDE.md section 3) and cascades from Deal, so
+ * a hard delete here would destroy the one thing the build treats as
+ * immutable. StageEvents are left completely untouched: this only ever
+ * updates the Deal row.
+ */
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return Response.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const existing = await prisma.deal.findFirst({ where: { id, archivedAt: null } });
+  if (!existing) {
+    return Response.json({ error: "Deal not found" }, { status: 404 });
+  }
+
+  const archived = await withActor(user.id, async () => {
+    return await prisma.deal.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
+  });
+
+  return Response.json({ data: archived });
+}

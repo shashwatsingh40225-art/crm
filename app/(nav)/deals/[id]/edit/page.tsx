@@ -17,7 +17,9 @@ export default async function EditDealPage({
   const { id } = await params;
 
   const [deal, companies, contacts, owners] = await Promise.all([
-    prisma.deal.findUnique({ where: { id }, include: { stage: true } }),
+    // Excludes archived deals so an archived deal's edit URL 404s too
+    // (INV-56 / ADR 0003), same as the detail page.
+    prisma.deal.findFirst({ where: { id, archivedAt: null }, include: { stage: true } }),
     prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.contact.findMany({
       select: { id: true, name: true, companyId: true },
