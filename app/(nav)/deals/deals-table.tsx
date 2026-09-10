@@ -6,6 +6,7 @@ import type { Source, StageKey } from "@prisma/client";
 import { DataTable } from "@/components/ui/data-table";
 import { StageBadge } from "@/components/ui/badges";
 import { cn } from "@/lib/utils";
+import { currencyFormatter, dateFormatter } from "./deals-format";
 
 /**
  * Serialized deal-list row (INV-25). Dates come across the server/client
@@ -26,20 +27,6 @@ export type DealRow = {
   nextActionDue: string | null;
   isOverdue: boolean;
 };
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-// Locale and time zone pinned explicitly - server (Vercel, UTC) and client
-// (the viewer's own locale/time zone) otherwise resolve `toLocaleDateString`
-// differently and React throws a hydration mismatch on the first render.
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeZone: "UTC",
-});
 
 const columns: ColumnDef<DealRow>[] = [
   {
@@ -74,7 +61,7 @@ const columns: ColumnDef<DealRow>[] = [
     header: "Proposed MRR",
     cell: ({ row }) =>
       row.original.proposedMrr !== null ? (
-        currency.format(row.original.proposedMrr)
+        currencyFormatter.format(row.original.proposedMrr)
       ) : (
         <span className="text-muted-foreground">—</span>
       ),
