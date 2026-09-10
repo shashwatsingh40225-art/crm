@@ -1,29 +1,73 @@
-import { LayoutDashboard } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
+import type { Source } from "@prisma/client";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth";
+import { getFunnelMetrics } from "@/app/api/dashboard/funnel/query";
+import {
+  getDashboardMetrics,
+  type Period,
+} from "@/app/api/dashboard/metrics/query";
+import { FunnelChart } from "./funnel-chart";
+import { MetricTiles } from "./metric-tiles";
+import { PeriodToggle } from "./period-toggle";
+import { SourceToggle } from "./source-toggle";
 
 export const runtime = "nodejs";
 
+const FUNNEL_SOURCE_VALUES: Source[] = ["outbound_scan", "inbound_signup"];
+function isFunnelSource(value: string): value is Source {
+  return (FUNNEL_SOURCE_VALUES as string[]).includes(value);
+}
+
+const PERIOD_VALUES: Period[] = ["7d", "30d", "all"];
+function isPeriod(value: string): value is Period {
+  return (PERIOD_VALUES as string[]).includes(value);
+}
+
 /**
- * PLACEHOLDER (INV-9). Agent C replaces this with the funnel dashboard in
- * INV-38 to INV-41. The funnel is a MUST and is the artifact the brief names
- * directly - it is never cut (CLAUDE.md section 2).
+ * INV-38/39/40. Server component: the source and period toggles are URL
+ * params (like Agent B's deal filters), so this re-queries directly on
+ * navigation with no client-side fetch or state to keep in sync.
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ source?: string; period?: string }>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
+
+  const source =
+    params.source && isFunnelSource(params.source) ? params.source : undefined;
+  const period: Period =
+    params.period && isPeriod(params.period) ? params.period : "30d";
+
+  const [funnel, metrics] = await Promise.all([
+    getFunnelMetrics({ source }),
+    getDashboardMetrics(period),
+  ]);
 
   return (
     <>
       <PageHeader
         title="Dashboard"
-        description={`Signed in as ${user.name}.`}
+        description={`Signed in as ${user.name}. One chain from first scan to signed engagement.`}
       />
-      <EmptyState
-        icon={LayoutDashboard}
-        title="Funnel dashboard not built yet"
-        description="INV-38 to INV-41 — Agent C · Activity & Dashboard. One chain from first scan to signed engagement."
-      />
+
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">This period</h2>
+          <PeriodToggle value={period} />
+        </div>
+        <MetricTiles metrics={metrics} />
+      </div>
+
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Funnel</h2>
+          <SourceToggle value={source} />
+        </div>
+        <FunnelChart stages={funnel} source={source} />
+      </div>
     </>
   );
 }
