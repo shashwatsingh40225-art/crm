@@ -6,10 +6,14 @@ import {
   getDashboardMetrics,
   type Period,
 } from "@/app/api/dashboard/metrics/query";
+import { getWorkQueue } from "@/app/api/dashboard/work-queue/query";
+import { getStaleDeals } from "@/app/api/dashboard/stale-deals/query";
 import { FunnelChart } from "./funnel-chart";
 import { MetricTiles } from "./metric-tiles";
 import { PeriodToggle } from "./period-toggle";
 import { SourceToggle } from "./source-toggle";
+import { WorkQueue } from "./work-queue";
+import { StalledDealsWidget } from "./stalled-deals-widget";
 
 export const runtime = "nodejs";
 
@@ -24,9 +28,12 @@ function isPeriod(value: string): value is Period {
 }
 
 /**
- * INV-38/39/40. Server component: the source and period toggles are URL
- * params (like Agent B's deal filters), so this re-queries directly on
- * navigation with no client-side fetch or state to keep in sync.
+ * INV-37/38/39/40/41 (INV-36 folded into the work queue's "next action"
+ * section). Server component: the source and period toggles are URL params
+ * (like Agent B's deal filters), so this re-queries directly on navigation
+ * with no client-side fetch or state to keep in sync. The work queue and
+ * stalled-deals widget aren't filter-driven, so they just run once per
+ * render alongside the funnel/metrics queries.
  */
 export default async function DashboardPage({
   searchParams,
@@ -41,9 +48,11 @@ export default async function DashboardPage({
   const period: Period =
     params.period && isPeriod(params.period) ? params.period : "30d";
 
-  const [funnel, metrics] = await Promise.all([
+  const [funnel, metrics, workQueue, staleDeals] = await Promise.all([
     getFunnelMetrics({ source }),
     getDashboardMetrics(period),
+    getWorkQueue(user.id),
+    getStaleDeals(),
   ]);
 
   return (
@@ -52,6 +61,11 @@ export default async function DashboardPage({
         title="Dashboard"
         description={`Signed in as ${user.name}. One chain from first scan to signed engagement.`}
       />
+
+      <div className="grid gap-2">
+        <h2 className="text-sm font-medium">My work today</h2>
+        <WorkQueue queue={workQueue} />
+      </div>
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -67,6 +81,11 @@ export default async function DashboardPage({
           <SourceToggle value={source} />
         </div>
         <FunnelChart stages={funnel} source={source} />
+      </div>
+
+      <div className="grid gap-2">
+        <h2 className="text-sm font-medium">Stalled deals</h2>
+        <StalledDealsWidget deals={staleDeals} />
       </div>
     </>
   );
