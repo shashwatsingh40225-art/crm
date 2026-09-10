@@ -6,6 +6,10 @@
 // feature agent runs `prisma migrate`. If a field is genuinely missing: stop,
 // and say which model, which field, which type, and why.
 //
+// Phase 2 unfreeze window (INV-48, 10 Sep): Foundation alone added
+// Company/Contact/Deal.archivedAt and Finding.reviewStatus in one migration,
+// before the Phase 2 fork. Re-frozen afterwards; the rule above applies again.
+//
 // Conventions
 //   - Prisma fields are camelCase; columns and tables are mapped to the
 //     snake_case names used in CLAUDE.md section 3. Agents write
@@ -126,6 +130,14 @@ enum FindingConfidence {
   low
 }
 
+/// A human's verdict on a Finding - distinct from confidence, which is the
+/// scanner's own estimate. Every Finding starts pending.
+enum FindingReviewStatus {
+  pending
+  approved
+  rejected
+}
+
 // --------------------------------------------------------------------------
 // Core records
 // --------------------------------------------------------------------------
@@ -170,6 +182,11 @@ model Company {
   icpFit         IcpFit?        @map("icp_fit")
   lifecycleStage LifecycleStage @default(prospect) @map("lifecycle_stage")
 
+  /// Soft delete (ADR 0003). Null means live. Set this instead of deleting the
+  /// row - onDelete: Cascade would take contacts, deals, activities, tasks and
+  /// findings with it.
+  archivedAt DateTime? @map("archived_at")
+
   ownerId String? @map("owner_id")
   owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
@@ -197,6 +214,9 @@ model Contact {
   phone String?
 
   lifecycleStage LifecycleStage @default(lead) @map("lifecycle_stage")
+
+  /// Soft delete (ADR 0003). Null means live.
+  archivedAt DateTime? @map("archived_at")
 
   companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -293,6 +313,10 @@ model Deal {
   outcome    DealOutcome?
   lostReason String?      @map("lost_reason")
   closedAt   DateTime?    @map("closed_at")
+
+  /// Soft delete (ADR 0003). Null means live. A hard delete would cascade away
+  /// the deal's append-only StageEvent history.
+  archivedAt DateTime? @map("archived_at")
 
   ownerId String? @map("owner_id")
   owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
@@ -414,6 +438,8 @@ model Finding {
   observation String
   evidenceUrl String?           @map("evidence_url")
   confidence  FindingConfidence @default(medium)
+
+  reviewStatus FindingReviewStatus @default(pending) @map("review_status")
 
   reviewedById String?   @map("reviewed_by")
   reviewedBy   User?     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
