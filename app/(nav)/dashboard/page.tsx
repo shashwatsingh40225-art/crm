@@ -7,7 +7,6 @@ import {
   type Period,
 } from "@/app/api/dashboard/metrics/query";
 import { getWorkQueue } from "@/app/api/dashboard/work-queue/query";
-import { getStaleDeals } from "@/app/api/dashboard/stale-deals/query";
 import { getWeightedForecast } from "@/app/api/dashboard/forecast/query";
 import { ForecastCard } from "./forecast-card";
 import { FunnelChart } from "./funnel-chart";
@@ -59,11 +58,12 @@ export default async function DashboardPage({
 
   const ownerId = scope === "mine" ? user.id : undefined;
 
-  const [funnel, metrics, workQueue, staleDeals, forecast] = await Promise.all([
+  // getWorkQueue internally calls getStaleDeals — use workQueue.staleDeals below
+  // to avoid fetching all open deals twice on every dashboard render.
+  const [funnel, metrics, workQueue, forecast] = await Promise.all([
     getFunnelMetrics({ source, ownerId }),
     getDashboardMetrics(period, ownerId),
     getWorkQueue(ownerId),
-    getStaleDeals({ ownerId }),
     getWeightedForecast(ownerId),
   ]);
 
@@ -105,7 +105,7 @@ export default async function DashboardPage({
 
       <div className="grid gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stalled deals</h2>
-        <StalledDealsWidget deals={staleDeals} />
+        <StalledDealsWidget deals={workQueue.staleDeals} />
       </div>
     </>
   );

@@ -69,7 +69,7 @@ export function AppSidebar({
                       isActive={isActive}
                       tooltip={item.title}
                     >
-                      <Link href={item.href}>
+                      <Link href={item.href} prefetch={false}>
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
