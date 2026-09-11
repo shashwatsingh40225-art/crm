@@ -10,7 +10,8 @@ import { NextActionEditor } from "../next-action-editor";
 import { StagePicker } from "../stage-picker";
 import { ClosedBanner } from "../closed-banner";
 import { DealActions } from "../deal-actions";
-import { currencyFormatter, dateFormatter, dateTimeFormatter } from "../deals-format";
+import { StageHistoryTimeline } from "../stage-history-timeline";
+import { currencyFormatter, dateFormatter } from "../deals-format";
 
 export const runtime = "nodejs";
 
@@ -52,7 +53,9 @@ export default async function DealDetailPage({
   const [stageEvents, tasks, stages, owners, contacts] = await Promise.all([
     prisma.stageEvent.findMany({
       where: { dealId: deal.id },
-      orderBy: { changedAt: "desc" },
+      // Ascending - the timeline (INV-57) reads top to bottom as it
+      // happened. priorStageId below reads the *last* element accordingly.
+      orderBy: { changedAt: "asc" },
       include: {
         fromStage: true,
         toStage: true,
@@ -77,11 +80,12 @@ export default async function DealDetailPage({
     deal.nextActionDue.getTime() < Date.now();
 
   const isClosed = deal.stage.key === "closed";
-  // stageEvents is newest-first, so stageEvents[0] is the transition that
-  // closed this deal (if it's closed) - its fromStageId is where reopen
-  // returns to. Falls back to Scanned only if that's somehow missing.
+  // stageEvents is chronological (oldest first), so the last element is the
+  // transition that closed this deal (if it's closed) - its fromStageId is
+  // where reopen returns to. Falls back to Scanned only if that's somehow
+  // missing.
   const priorStageId =
-    (isClosed ? stageEvents[0]?.fromStageId : null) ??
+    (isClosed ? stageEvents[stageEvents.length - 1]?.fromStageId : null) ??
     stages.find((s) => s.key === "scanned")?.id ??
     stages[0].id;
 
@@ -192,24 +196,7 @@ export default async function DealDetailPage({
               <CardTitle>Stage history</CardTitle>
             </CardHeader>
             <CardContent>
-              {stageEvents.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No transitions yet.</p>
-              ) : (
-                <ol className="grid gap-3">
-                  {stageEvents.map((e) => (
-                    <li key={e.id} className="grid gap-0.5 text-sm">
-                      <span>
-                        {e.fromStage ? e.fromStage.name : "Entered pipeline"} →{" "}
-                        <span className="font-medium">{e.toStage.name}</span>
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {dateTimeFormatter.format(e.changedAt)} ·{" "}
-                        {e.changedBy?.name ?? "Unknown"}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <StageHistoryTimeline events={stageEvents} currentStageName={deal.stage.name} />
             </CardContent>
           </Card>
 

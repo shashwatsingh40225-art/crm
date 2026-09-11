@@ -18,7 +18,13 @@ export default async function NewDealPage({
   const { companyId } = await searchParams;
 
   const [companies, contacts, owners] = await Promise.all([
-    prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    // Archived companies aren't a valid home for a new deal (flagged by
+    // Agent A; ADR 0003).
+    prisma.company.findMany({
+      where: { archivedAt: null },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
     prisma.contact.findMany({
       select: { id: true, name: true, companyId: true },
       orderBy: { name: "asc" },
