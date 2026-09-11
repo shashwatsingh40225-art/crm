@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import {
   Sidebar,
   SidebarContent,
@@ -29,17 +30,20 @@ export function AppSidebar({
   badges?: Partial<Record<NavBadge, number>>;
 }) {
   const pathname = usePathname();
+  const { setTheme, resolvedTheme } = useTheme();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold">
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <div className="bg-[#232366] text-white flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold tracking-tight shadow-sm">
             IN
           </div>
           <div className="grid min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="truncate text-sm font-semibold">Invictus CRM</span>
-            <span className="text-muted-foreground truncate text-xs">
+            <span className="truncate text-sm font-semibold tracking-tight">
+              Invictus CRM
+            </span>
+            <span className="text-muted-foreground truncate text-[11px]">
               Verena launch
             </span>
           </div>
@@ -86,9 +90,28 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="text-muted-foreground truncate px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
-              {userName}
+            <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center">
+              <div className="bg-primary/10 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
+                {userName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()}
+              </div>
+              <span className="text-muted-foreground truncate text-xs font-medium group-data-[collapsible=icon]:hidden">
+                {userName}
+              </span>
             </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              tooltip="Toggle theme"
+            >
+              <Sun className="size-4 dark:hidden" />
+              <Moon className="hidden size-4 dark:block" />
+              <span>Theme</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <form action={signOut} className="w-full">

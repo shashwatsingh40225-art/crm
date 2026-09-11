@@ -36,9 +36,16 @@ const CONFIDENCE_LABELS: Record<FindingConfidence, string> = {
 };
 
 const CONFIDENCE_CLASSES: Record<FindingConfidence, string> = {
-  high: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
-  medium: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-  low: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  high: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+  medium: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  low: "bg-slate-50 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300 border-slate-200 dark:border-slate-800",
+};
+
+const FRAMEWORK_CLASSES: Record<string, string> = {
+  ADA: "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border-violet-200 dark:border-violet-800",
+  GDPR: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+  CCPA: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+  HIPAA: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
 const ICP_FIT_OPTIONS: { value: IcpFit; label: string }[] = [
@@ -138,10 +145,10 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm transition-all hover:border-border/90">
       <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
         <div className="grid gap-1">
-          <CardTitle>{row.companyName}</CardTitle>
+          <CardTitle className="text-base font-semibold tracking-tight">{row.companyName}</CardTitle>
           <p className="text-sm text-muted-foreground">
             {row.domain ?? "No domain on file"} · {row.pendingCount}{" "}
             {row.pendingCount === 1 ? "finding" : "findings"} · arrived{" "}
@@ -151,7 +158,7 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
         <div className="flex shrink-0 items-center gap-2">
           <Badge
             className={cn(
-              "border-transparent font-medium",
+              "font-medium",
               CONFIDENCE_CLASSES[row.highestConfidence],
             )}
           >
@@ -167,12 +174,19 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
       {expanded && (
         <CardContent className="grid gap-2 border-t pt-4">
           {row.findings.map((finding) => (
-            <div key={finding.id} className="grid gap-1 rounded-lg bg-muted/40 p-3 text-sm">
+            <div key={finding.id} className="grid gap-1.5 rounded-lg border border-border/50 bg-muted/20 p-3 text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{finding.framework}</span>
                 <Badge
                   className={cn(
-                    "border-transparent font-medium",
+                    "font-medium",
+                    FRAMEWORK_CLASSES[finding.framework] ?? "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {finding.framework}
+                </Badge>
+                <Badge
+                  className={cn(
+                    "font-medium",
                     CONFIDENCE_CLASSES[finding.confidence],
                   )}
                 >
@@ -199,6 +213,7 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
         <Button
           size="sm"
           variant="outline"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive border-border/70"
           onClick={() => {
             setError(null);
             setRejectOpen(true);
@@ -208,6 +223,7 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
         </Button>
         <Button
           size="sm"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           onClick={() => {
             setError(null);
             setApproveOpen(true);

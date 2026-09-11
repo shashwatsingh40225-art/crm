@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
  * emits classes it can see in the source.
  */
 
-const badgeBase = "border-transparent font-medium";
+const badgeBase = "border text-[11px] font-medium tracking-tight rounded-full px-2 py-0.5";
 
 // --- Stage (deal pipeline position) ---------------------------------------
 
@@ -35,18 +35,18 @@ const STAGE_LABELS: Record<StageKey, string> = {
 };
 
 const STAGE_CLASSES: Record<StageKey, string> = {
-  scanned: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
-  qualified: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
+  scanned: "bg-slate-100 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300 border-slate-200 dark:border-slate-800",
+  qualified: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800",
   contacted:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
   engaged:
-    "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
+    "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border-violet-200 dark:border-violet-800",
   evaluating:
-    "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+    "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
   proposal:
-    "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200",
+    "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border-orange-200 dark:border-orange-800",
   closed:
-    "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
 export function StageBadge({
@@ -79,16 +79,16 @@ const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
 };
 
 const LIFECYCLE_CLASSES: Record<LifecycleStage, string> = {
-  prospect: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
-  lead: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
-  qualified: "bg-teal-100 text-teal-900 dark:bg-teal-950 dark:text-teal-200",
+  prospect: "bg-slate-100 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300 border-slate-200 dark:border-slate-800",
+  lead: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+  qualified: "bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800",
   opportunity:
-    "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200",
+    "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border-violet-200 dark:border-violet-800",
   customer:
-    "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
-  churned: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+  churned: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
   disqualified:
-    "bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
+    "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
 };
 
 export function LifecycleBadge({
@@ -114,11 +114,11 @@ const SOURCE_LABELS: Record<Source, string> = {
 };
 
 const SOURCE_CLASSES: Record<Source, string> = {
-  outbound_scan: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  outbound_scan: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800",
   inbound_signup:
-    "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
   referral:
-    "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200",
+    "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
 };
 
 export function SourceBadge({
@@ -146,10 +146,10 @@ const ICP_LABELS: Record<IcpFit, string> = {
 
 const ICP_CLASSES: Record<IcpFit, string> = {
   strong:
-    "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200",
-  moderate: "bg-lime-100 text-lime-900 dark:bg-lime-950 dark:text-lime-200",
-  weak: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-  none: "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200",
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+  moderate: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+  weak: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  none: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
 };
 
 export function IcpFitBadge({
@@ -175,11 +175,11 @@ const TIER_LABELS: Record<PlanTier, string> = {
 };
 
 const TIER_CLASSES: Record<PlanTier, string> = {
-  starter: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  starter: "bg-slate-50 text-slate-700 dark:bg-slate-900/50 dark:text-slate-300 border-slate-200 dark:border-slate-800",
   professional:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
   enterprise:
-    "bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-200",
+    "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
 };
 
 export function PlanTierBadge({
@@ -204,8 +204,8 @@ const OUTCOME_LABELS: Record<DealOutcome, string> = {
 };
 
 const OUTCOME_CLASSES: Record<DealOutcome, string> = {
-  won: "bg-emerald-600 text-white dark:bg-emerald-700",
-  lost: "bg-rose-600 text-white dark:bg-rose-700",
+  won: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+  lost: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
 };
 
 export function OutcomeBadge({

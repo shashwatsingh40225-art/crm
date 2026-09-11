@@ -37,7 +37,7 @@ export function FunnelChart({
 
   return (
     <div className="grid gap-4">
-      <Card>
+      <Card className="border-border/60 shadow-sm">
         <CardContent>
           <ChartContainer config={chartConfig} className="h-56 w-full">
             <BarChart data={chartData} layout="vertical" margin={{ left: 12 }}>
@@ -68,7 +68,7 @@ export function FunnelChart({
             <div key={stage.key} className="flex items-center gap-2">
               <Link
                 href={href}
-                className="hover:border-ring hover:bg-muted/50 grid min-w-32 gap-1 rounded-lg border p-3 transition-colors"
+                className="hover:border-primary/50 hover:bg-muted/40 grid min-w-32 gap-1 rounded-lg border border-border/60 bg-card p-3 transition-all hover:shadow-sm"
               >
                 <p className="text-xs font-medium">{stage.name}</p>
                 <p className="text-xl font-semibold tabular-nums">

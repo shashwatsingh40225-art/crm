@@ -27,21 +27,21 @@ export function StalledDealsWidget({ deals }: { deals: StaleDeal[] }) {
   }
 
   return (
-    <Card size="sm">
+    <Card size="sm" className="border-border/60 shadow-sm overflow-hidden">
       <CardContent className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-muted-foreground border-b text-left text-xs">
-              <th className="px-4 py-2 font-medium">Deal</th>
-              <th className="px-4 py-2 font-medium">Stage</th>
-              <th className="px-4 py-2 font-medium">Owner</th>
-              <th className="px-4 py-2 font-medium">Days stale</th>
-              <th className="px-4 py-2 font-medium">Next action</th>
+            <tr className="text-muted-foreground bg-muted/40 border-b text-left text-xs uppercase tracking-wider font-semibold">
+              <th className="px-4 py-2.5 font-semibold">Deal</th>
+              <th className="px-4 py-2.5 font-semibold">Stage</th>
+              <th className="px-4 py-2.5 font-semibold">Owner</th>
+              <th className="px-4 py-2.5 font-semibold">Days stale</th>
+              <th className="px-4 py-2.5 font-semibold">Next action</th>
             </tr>
           </thead>
           <tbody>
             {deals.map((d) => (
-              <tr key={d.id} className="hover:bg-muted/50 border-b last:border-0">
+              <tr key={d.id} className="hover:bg-muted/30 border-b last:border-0 transition-colors">
                 <td className="px-4 py-2">
                   <Link href={`/deals/${d.id}`} className="hover:underline">
                     <span className="font-medium">{d.name}</span>

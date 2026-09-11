@@ -384,26 +384,26 @@ export function ActivityTimeline({
               return (
                 <li
                   key={activity.id}
-                  className="flex gap-3 rounded-lg border p-3"
+                  className="flex gap-3 rounded-lg border border-border/60 bg-card p-3.5 shadow-sm transition-all hover:border-border/90 hover:shadow-md"
                 >
-                  <div className="bg-muted text-muted-foreground mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full">
+                  <div className="bg-primary/10 text-primary mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full">
                     <Icon className="size-3.5" />
                   </div>
-                  <div className="grid flex-1 gap-0.5">
+                  <div className="grid flex-1 gap-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium">{activity.subject}</p>
-                      <span className="text-muted-foreground shrink-0 text-xs">
+                      <p className="text-sm font-semibold tracking-tight leading-snug">{activity.subject}</p>
+                      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                         {formatDistanceToNow(new Date(activity.occurredAt), {
                           addSuffix: true,
                         })}
                       </span>
                     </div>
                     {activity.body ? (
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         {activity.body}
                       </p>
                     ) : null}
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground text-xs font-medium">
                       {TYPE_LABEL[activity.type]} ·{" "}
                       {activity.createdBy?.name ?? "System"}
                     </p>

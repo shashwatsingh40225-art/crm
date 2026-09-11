@@ -27,14 +27,14 @@ export function ForecastCard({ forecast }: { forecast: WeightedForecast }) {
   }
 
   return (
-    <Card>
-      <CardContent className="grid gap-4">
+    <Card className="border-border/60 shadow-sm">
+      <CardContent className="grid gap-4 p-5">
         <div className="grid gap-1">
           <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-            <TrendingUp className="size-3.5" />
+            <TrendingUp className="size-3.5 text-primary/70" />
             Weighted pipeline value
           </div>
-          <p className="text-2xl font-semibold tabular-nums">
+          <p className="text-2xl font-semibold tracking-tight tabular-nums">
             {currencyFormatter.format(forecast.totalWeightedMrr)}
           </p>
           <p className="text-muted-foreground text-xs">
@@ -47,33 +47,33 @@ export function ForecastCard({ forecast }: { forecast: WeightedForecast }) {
           </p>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-md border border-border/40">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-muted-foreground border-b text-left text-xs">
-                <th className="py-2 pr-4 font-medium">Stage</th>
-                <th className="py-2 pr-4 font-medium">Deals</th>
-                <th className="py-2 pr-4 font-medium">Raw MRR</th>
-                <th className="py-2 font-medium">Weighted MRR</th>
+              <tr className="text-muted-foreground bg-muted/40 border-b text-left text-xs uppercase tracking-wider font-semibold">
+                <th className="py-2.5 px-3 font-semibold">Stage</th>
+                <th className="py-2.5 px-3 font-semibold">Deals</th>
+                <th className="py-2.5 px-3 font-semibold">Raw MRR</th>
+                <th className="py-2.5 px-3 font-semibold">Weighted MRR</th>
               </tr>
             </thead>
             <tbody>
               {forecast.stages.map((s) => (
-                <tr key={s.key} className="border-b last:border-0">
-                  <td className="py-2 pr-4">{s.name}</td>
-                  <td className="py-2 pr-4 tabular-nums">
+                <tr key={s.key} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="py-2.5 px-3 font-medium">{s.name}</td>
+                  <td className="py-2.5 px-3 tabular-nums">
                     {s.dealCount}
                     {s.dealsWithoutMrr > 0 ? (
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {" "}
                         ({s.dealsWithoutMrr} no MRR)
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-2 pr-4 tabular-nums">
+                  <td className="py-2.5 px-3 tabular-nums">
                     {currencyFormatter.format(s.rawMrr)}
                   </td>
-                  <td className="py-2 font-medium tabular-nums">
+                  <td className="py-2.5 px-3 font-medium tabular-nums text-primary">
                     {currencyFormatter.format(s.weightedMrr)}
                   </td>
                 </tr>

@@ -76,7 +76,7 @@ export default async function DashboardPage({
       />
 
       <div className="grid gap-2">
-        <h2 className="text-sm font-medium">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {scope === "mine" ? "My work today" : "Team work today"}
         </h2>
         <WorkQueue queue={workQueue} scope={scope} />
@@ -84,27 +84,27 @@ export default async function DashboardPage({
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">This period</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">This period</h2>
           <PeriodToggle value={period} />
         </div>
         <MetricTiles metrics={metrics} />
       </div>
 
       <div className="grid gap-2">
-        <h2 className="text-sm font-medium">Weighted forecast</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Weighted forecast</h2>
         <ForecastCard forecast={forecast} />
       </div>
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-medium">Funnel</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funnel</h2>
           <SourceToggle value={source} />
         </div>
         <FunnelChart stages={funnel} source={source} />
       </div>
 
       <div className="grid gap-2">
-        <h2 className="text-sm font-medium">Stalled deals</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Stalled deals</h2>
         <StalledDealsWidget deals={staleDeals} />
       </div>
     </>

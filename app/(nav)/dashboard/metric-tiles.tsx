@@ -37,13 +37,13 @@ export function MetricTiles({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {tiles.map((t) => (
-        <Card key={t.label}>
-          <CardContent className="grid gap-2">
+        <Card key={t.label} className="border-border/60 transition-all hover:border-border/90 hover:shadow-sm">
+          <CardContent className="grid gap-2 p-4">
             <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-              <t.icon className="size-3.5" />
+              <t.icon className="size-3.5 text-primary/70" />
               {t.label}
             </div>
-            <p className="text-2xl font-semibold tabular-nums">{t.value}</p>
+            <p className="text-2xl font-semibold tracking-tight tabular-nums">{t.value}</p>
           </CardContent>
         </Card>
       ))}

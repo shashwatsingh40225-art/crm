@@ -189,13 +189,16 @@ function Column({ stage, deals }: { stage: Stage; deals: BoardDeal[] }) {
     <div
       ref={setNodeRef}
       className={cn(
-        "grid w-64 shrink-0 auto-rows-min gap-2 rounded-lg border p-2 transition-colors",
-        isOver && "border-primary bg-muted/40",
+        "grid w-64 shrink-0 auto-rows-min gap-2 rounded-lg border border-border/60 bg-muted/25 p-2.5 transition-colors",
+        isOver && "border-primary/50 bg-primary/5",
       )}
     >
       <div className="grid gap-0.5 px-1 pt-1">
-        <span className="text-sm font-medium">{stage.name}</span>
-        <span className="text-muted-foreground text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="size-2 rounded-full bg-primary/60" />
+          <span className="text-sm font-semibold tracking-tight">{stage.name}</span>
+        </div>
+        <span className="text-muted-foreground text-xs tabular-nums pl-3.5">
           {deals.length} {deals.length === 1 ? "deal" : "deals"}
           {mrrTotal > 0 ? ` · ${currencyFormatter.format(mrrTotal)}` : ""}
         </span>
@@ -229,15 +232,15 @@ function Card({ deal }: { deal: BoardDeal }) {
         opacity: isDragging ? 0.5 : 1,
       }}
       className={cn(
-        "grid gap-1 rounded-lg border bg-card p-2.5 text-sm shadow-sm",
+        "grid gap-1.5 rounded-lg border border-border/60 bg-card p-3 text-sm shadow-sm transition-all hover:border-border/90 hover:shadow-md",
         deal.isClosed
-          ? "cursor-pointer opacity-75"
+          ? "cursor-pointer opacity-70"
           : "cursor-grab active:cursor-grabbing",
-        isStale && !deal.isClosed && "border-amber-400 dark:border-amber-600",
+        isStale && !deal.isClosed && "border-amber-400/80 dark:border-amber-600/60",
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{deal.name}</span>
+        <span className="font-semibold tracking-tight leading-snug">{deal.name}</span>
         {deal.isClosed ? (
           <Lock className="text-muted-foreground size-3.5 shrink-0" aria-label="Closed - read-only" />
         ) : null}
@@ -246,7 +249,9 @@ function Card({ deal }: { deal: BoardDeal }) {
       <div className="mt-1 flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{deal.ownerName ?? "Unassigned"}</span>
         {deal.proposedMrr ? (
-          <span className="font-medium">{currencyFormatter.format(deal.proposedMrr)}</span>
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary tabular-nums">
+            {currencyFormatter.format(deal.proposedMrr)}
+          </span>
         ) : null}
       </div>
       {!deal.isClosed ? (

@@ -64,7 +64,7 @@ function QueueRow({
   return (
     <Link
       href={href}
-      className="hover:border-ring hover:bg-muted/50 flex items-center justify-between gap-3 rounded-lg border p-3 text-sm transition-colors"
+      className="hover:border-primary/50 hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-3 text-sm transition-all hover:shadow-sm"
     >
       <div className="grid gap-0.5">
         <span className="font-medium">{title}</span>
@@ -132,7 +132,7 @@ export function WorkQueue({
   }
 
   return (
-    <Card>
+    <Card className="border-border/60 shadow-sm">
       <CardContent className="grid gap-4">
         {queue.tasks.length > 0 ? (
           <QueueSection icon={CheckSquare} title="Tasks">
