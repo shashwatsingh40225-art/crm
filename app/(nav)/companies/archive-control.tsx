@@ -19,19 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { API_BASE, LIST_PATH } from "./entity-paths";
 
 type OpenDeal = { id: string; name: string };
-
-// "company" -> "companies" isn't a plain `+ "s"` - naive pluralization 404s
-// the API route.
-const API_BASE: Record<"company" | "contact", string> = {
-  company: "/api/companies",
-  contact: "/api/contacts",
-};
-const LIST_PATH: Record<"company" | "contact", string> = {
-  company: "/companies",
-  contact: "/contacts",
-};
 
 /**
  * Archive action for a Company or Contact detail page (INV-53). Shared

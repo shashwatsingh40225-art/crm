@@ -12,13 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// "company" -> "companies" isn't a plain `+ "s"` - naive pluralization 404s
-// the API route (found while wiring up the archive control, INV-53).
-const API_BASE: Record<"company" | "contact", string> = {
-  company: "/api/companies",
-  contact: "/api/contacts",
-};
+import { API_BASE } from "./entity-paths";
 
 const LIFECYCLE_LABELS: Record<LifecycleStage, string> = {
   prospect: "Prospect",

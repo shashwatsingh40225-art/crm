@@ -10,6 +10,7 @@ import { SourceBadge, IcpFitBadge } from "@/components/ui/badges";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { LifecycleStageControl } from "../lifecycle-stage-control";
 import { ArchiveControl } from "../archive-control";
+import { OwnerControl } from "../owner-control";
 import {
   ContactsPanel,
   DealsPanel,
@@ -40,14 +41,13 @@ export default async function CompanyDetailPage({
 
   const company = await prisma.company.findUnique({
     where: { id },
-    include: { owner: true },
   });
 
   if (!company || company.archivedAt) notFound();
 
   // Deals and Tasks belong to Agents B and C. Read through the shared client,
   // never through their API routes (ADR 0002 / CLAUDE.md section 9).
-  const [contacts, deals, tasks, lastActivity] = await Promise.all([
+  const [contacts, deals, tasks, lastActivity, owners] = await Promise.all([
     prisma.contact.findMany({
       where: { companyId: id, archivedAt: null },
       orderBy: { name: "asc" },
@@ -73,6 +73,7 @@ export default async function CompanyDetailPage({
       orderBy: { occurredAt: "desc" },
       select: { occurredAt: true, subject: true },
     }),
+    prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const openDeals = deals.filter((deal) => !deal.outcome);
@@ -138,7 +139,12 @@ export default async function CompanyDetailPage({
             </DetailField>
 
             <DetailField label="Owner">
-              {company.owner ? company.owner.name : <Dash />}
+              <OwnerControl
+                entityType="company"
+                entityId={company.id}
+                value={company.ownerId}
+                owners={owners}
+              />
             </DetailField>
 
             <DetailField label="Open deals">

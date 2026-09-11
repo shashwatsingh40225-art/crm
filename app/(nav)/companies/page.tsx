@@ -139,6 +139,7 @@ export default async function CompaniesPage({
         <CompaniesFilters owners={owners} />
         <CompaniesTable
           data={rows}
+          owners={owners}
           emptyState={
             <EmptyState
               icon={Building2}

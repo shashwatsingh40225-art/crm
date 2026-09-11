@@ -8,6 +8,7 @@ import { DetailField } from "@/components/ui/detail-panel";
 import { ActivityTimeline } from "@/components/ui/activity-timeline";
 import { LifecycleStageControl } from "../../companies/lifecycle-stage-control";
 import { ArchiveControl } from "../../companies/archive-control";
+import { OwnerControl } from "../../companies/owner-control";
 import {
   DealsPanel,
   TasksPanel,
@@ -29,14 +30,14 @@ export default async function ContactDetailPage({
 
   const contact = await prisma.contact.findUnique({
     where: { id },
-    include: { owner: true, company: true },
+    include: { company: true },
   });
 
   if (!contact || contact.archivedAt) notFound();
 
   // Only deals this contact is PRIMARY on - not every deal at their company.
   // Deals and Tasks are read through the shared client (ADR 0002).
-  const [deals, tasks] = await Promise.all([
+  const [deals, tasks, owners] = await Promise.all([
     prisma.deal.findMany({
       where: { primaryContactId: id },
       include: { stage: true },
@@ -47,6 +48,7 @@ export default async function ContactDetailPage({
       include: { owner: { select: { name: true } } },
       orderBy: { dueDate: "asc" },
     }),
+    prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const relatedDeals: RelatedDeal[] = deals.map((deal) => ({
@@ -110,7 +112,12 @@ export default async function ContactDetailPage({
             </DetailField>
 
             <DetailField label="Owner">
-              {contact.owner ? contact.owner.name : <Dash />}
+              <OwnerControl
+                entityType="contact"
+                entityId={contact.id}
+                value={contact.ownerId}
+                owners={owners}
+              />
             </DetailField>
           </dl>
         </CardContent>
