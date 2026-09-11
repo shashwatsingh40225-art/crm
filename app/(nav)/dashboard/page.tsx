@@ -8,6 +8,8 @@ import {
 } from "@/app/api/dashboard/metrics/query";
 import { getWorkQueue } from "@/app/api/dashboard/work-queue/query";
 import { getStaleDeals } from "@/app/api/dashboard/stale-deals/query";
+import { getWeightedForecast } from "@/app/api/dashboard/forecast/query";
+import { ForecastCard } from "./forecast-card";
 import { FunnelChart } from "./funnel-chart";
 import { MetricTiles } from "./metric-tiles";
 import { PeriodToggle } from "./period-toggle";
@@ -57,11 +59,12 @@ export default async function DashboardPage({
 
   const ownerId = scope === "mine" ? user.id : undefined;
 
-  const [funnel, metrics, workQueue, staleDeals] = await Promise.all([
+  const [funnel, metrics, workQueue, staleDeals, forecast] = await Promise.all([
     getFunnelMetrics({ source, ownerId }),
     getDashboardMetrics(period, ownerId),
     getWorkQueue(ownerId),
     getStaleDeals({ ownerId }),
+    getWeightedForecast(ownerId),
   ]);
 
   return (
@@ -85,6 +88,11 @@ export default async function DashboardPage({
           <PeriodToggle value={period} />
         </div>
         <MetricTiles metrics={metrics} />
+      </div>
+
+      <div className="grid gap-2">
+        <h2 className="text-sm font-medium">Weighted forecast</h2>
+        <ForecastCard forecast={forecast} />
       </div>
 
       <div className="grid gap-2">
