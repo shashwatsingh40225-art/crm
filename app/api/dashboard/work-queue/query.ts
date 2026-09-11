@@ -92,6 +92,7 @@ export async function getWorkQueue(ownerId?: string): Promise<WorkQueue> {
       where: {
         ...(ownerId ? { ownerId } : {}),
         outcome: null,
+        archivedAt: null,
         nextActionDue: { lte: cutoff },
       },
       orderBy: { nextActionDue: "asc" },
@@ -105,8 +106,8 @@ export async function getWorkQueue(ownerId?: string): Promise<WorkQueue> {
     getStaleDeals({ ownerId }),
     ownerId
       ? Promise.all([
-          prisma.company.count({ where: { ownerId } }),
-          prisma.deal.count({ where: { ownerId } }),
+          prisma.company.count({ where: { ownerId, archivedAt: null } }),
+          prisma.deal.count({ where: { ownerId, archivedAt: null } }),
           prisma.task.count({ where: { ownerId } }),
         ])
       : null,

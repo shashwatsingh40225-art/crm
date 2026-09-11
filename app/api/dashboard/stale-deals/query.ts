@@ -35,7 +35,7 @@ export type StaleDeal = {
 export async function getStaleDeals(filters: {
   ownerId?: string;
 } = {}): Promise<StaleDeal[]> {
-  const where: Prisma.DealWhereInput = { outcome: null };
+  const where: Prisma.DealWhereInput = { outcome: null, archivedAt: null };
   if (filters.ownerId) where.ownerId = filters.ownerId;
 
   const deals = await prisma.deal.findMany({

@@ -41,6 +41,7 @@ export async function getDashboardMetrics(
       prisma.company.count({
         where: {
           source: "outbound_scan",
+          archivedAt: null,
           ...(since ? { createdAt: { gte: since } } : {}),
           ...(ownerId ? { ownerId } : {}),
         },
@@ -62,6 +63,7 @@ export async function getDashboardMetrics(
       prisma.deal.findMany({
         where: {
           outcome: "won",
+          archivedAt: null,
           ...(since ? { closedAt: { gte: since } } : {}),
           ...(ownerId ? { ownerId } : {}),
         },

@@ -67,7 +67,7 @@ export async function getFunnelMetrics(
 ): Promise<FunnelStageMetric[]> {
   const stages = await prisma.stage.findMany({ orderBy: { position: "asc" } });
 
-  const dealWhere: Prisma.DealWhereInput = {};
+  const dealWhere: Prisma.DealWhereInput = { archivedAt: null };
   if (filters.source) dealWhere.source = filters.source;
   if (filters.ownerId) dealWhere.ownerId = filters.ownerId;
   if (filters.from || filters.to) {
@@ -92,13 +92,13 @@ export async function getFunnelMetrics(
     },
   });
 
-  const eventWhere: Prisma.StageEventWhereInput = {};
-  if (filters.source || filters.ownerId) {
-    eventWhere.deal = {
+  const eventWhere: Prisma.StageEventWhereInput = {
+    deal: {
+      archivedAt: null,
       ...(filters.source ? { source: filters.source } : {}),
       ...(filters.ownerId ? { ownerId: filters.ownerId } : {}),
-    };
-  }
+    },
+  };
   if (filters.from || filters.to) {
     const changedAt: Prisma.DateTimeFilter = {};
     if (filters.from) changedAt.gte = filters.from;
