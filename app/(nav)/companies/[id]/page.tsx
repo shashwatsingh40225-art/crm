@@ -14,8 +14,10 @@ import { OwnerControl } from "../owner-control";
 import {
   ContactsPanel,
   DealsPanel,
+  FindingsPanel,
   TasksPanel,
   type RelatedDeal,
+  type RelatedFinding,
 } from "../related-panels";
 
 export const runtime = "nodejs";
@@ -47,7 +49,7 @@ export default async function CompanyDetailPage({
 
   // Deals and Tasks belong to Agents B and C. Read through the shared client,
   // never through their API routes (ADR 0002 / CLAUDE.md section 9).
-  const [contacts, deals, tasks, lastActivity, owners] = await Promise.all([
+  const [contacts, deals, tasks, lastActivity, owners, findings] = await Promise.all([
     prisma.contact.findMany({
       where: { companyId: id, archivedAt: null },
       orderBy: { name: "asc" },
@@ -74,6 +76,13 @@ export default async function CompanyDetailPage({
       select: { occurredAt: true, subject: true },
     }),
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    // Findings are Agent D's (app/api/findings/**) - read only, through the
+    // shared Prisma client (ADR 0002). This panel never writes reviewStatus;
+    // that only happens in /review (INV-61).
+    prisma.finding.findMany({
+      where: { companyId: id },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const openDeals = deals.filter((deal) => !deal.outcome);
@@ -96,6 +105,15 @@ export default async function CompanyDetailPage({
     stageName: deal.stage.name,
     proposedMrr: deal.proposedMrr ? Number(deal.proposedMrr) : null,
     outcome: deal.outcome,
+  }));
+
+  const relatedFindings: RelatedFinding[] = findings.map((finding) => ({
+    id: finding.id,
+    framework: finding.framework,
+    observation: finding.observation,
+    evidenceUrl: finding.evidenceUrl,
+    confidence: finding.confidence,
+    reviewStatus: finding.reviewStatus,
   }));
 
   return (
@@ -223,6 +241,7 @@ export default async function CompanyDetailPage({
         </div>
 
         <div className="grid gap-6">
+          <FindingsPanel findings={relatedFindings} />
           <ContactsPanel contacts={contacts} />
           <DealsPanel deals={relatedDeals} />
           <TasksPanel
