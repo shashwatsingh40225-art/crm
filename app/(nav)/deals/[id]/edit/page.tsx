@@ -16,19 +16,33 @@ export default async function EditDealPage({
 }) {
   const { id } = await params;
 
-  const [deal, companies, contacts, owners] = await Promise.all([
-    // Excludes archived deals so an archived deal's edit URL 404s too
-    // (INV-56 / ADR 0003), same as the detail page.
-    prisma.deal.findFirst({ where: { id, archivedAt: null }, include: { stage: true } }),
-    prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+  // Excludes archived deals so an archived deal's edit URL 404s too
+  // (INV-56 / ADR 0003), same as the detail page. Fetched before the
+  // Promise.all below because the company list needs deal.companyId.
+  const deal = await prisma.deal.findFirst({
+    where: { id, archivedAt: null },
+    include: { stage: true },
+  });
+
+  if (!deal) notFound();
+
+  const [companies, contacts, owners] = await Promise.all([
+    // Archived companies aren't a valid new home for a deal (same gap
+    // Agent A flagged for new/page.tsx) - except the deal's own current
+    // company stays selectable even if it's since been archived, or the
+    // combobox would silently show no selection for an already-valid,
+    // already-saved company.
+    prisma.company.findMany({
+      where: { OR: [{ archivedAt: null }, { id: deal.companyId }] },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
     prisma.contact.findMany({
       select: { id: true, name: true, companyId: true },
       orderBy: { name: "asc" },
     }),
     prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
-
-  if (!deal) notFound();
 
   // INV-31: closed deals are read-only except for reopen, which lives on
   // the detail page's banner, not here. Guards the PATCH route too - this

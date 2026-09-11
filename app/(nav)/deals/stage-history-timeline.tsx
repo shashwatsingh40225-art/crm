@@ -55,6 +55,7 @@ export function StageHistoryTimeline({
         {events.map((event, i) => {
           const isEntry = event.fromStage === null;
           const isBackward = !isEntry && event.toStage.position < event.fromStage!.position;
+          const isLast = i === events.length - 1;
           const daysInFromStage = isEntry
             ? null
             : daysBetween(events[i - 1].changedAt, event.changedAt);
@@ -63,8 +64,16 @@ export function StageHistoryTimeline({
             <li
               key={event.id}
               className={cn(
-                "relative border-l-2 pl-4 last:border-transparent",
-                isBackward ? "border-amber-300 dark:border-amber-800" : "border-border",
+                "relative border-l-2 pl-4",
+                // No trailing line below the final entry regardless of color
+                // - computed explicitly rather than via a `last:` variant,
+                // which silently wins the border-color fight against the
+                // backward color below on whichever entry happens to be last.
+                isLast
+                  ? "border-transparent"
+                  : isBackward
+                    ? "border-amber-300 dark:border-amber-800"
+                    : "border-border",
               )}
             >
               <span
