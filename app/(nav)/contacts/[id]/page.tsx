@@ -17,9 +17,7 @@ import {
 
 export const runtime = "nodejs";
 
-function Dash() {
-  return <span className="text-muted-foreground">—</span>;
-}
+
 
 export default async function ContactDetailPage({
   params,
@@ -96,9 +94,7 @@ export default async function ContactDetailPage({
                 <a href={`mailto:${contact.email}`} className="hover:underline">
                   {contact.email}
                 </a>
-              ) : (
-                <Dash />
-              )}
+              ) : null}
             </DetailField>
 
             <DetailField label="Phone" value={contact.phone} />

@@ -30,9 +30,7 @@ const SIZE_LABELS: Record<string, string> = {
   size_1000_plus: "1,000+",
 };
 
-function Dash() {
-  return <span className="text-muted-foreground">—</span>;
-}
+
 
 export default async function CompanyDetailPage({
   params,
@@ -166,9 +164,7 @@ export default async function CompanyDetailPage({
             </DetailField>
 
             <DetailField label="Open deals">
-              {openDeals.length === 0 ? (
-                <Dash />
-              ) : (
+              {openDeals.length === 0 ? null : (
                 <span>
                   {openDeals.length}
                   <span className="text-muted-foreground">
@@ -195,9 +191,7 @@ export default async function CompanyDetailPage({
                       : ""}
                   </Link>
                 </div>
-              ) : (
-                <Dash />
-              )}
+              ) : null}
             </DetailField>
 
             <DetailField label="Last activity">
@@ -208,9 +202,7 @@ export default async function CompanyDetailPage({
                     {lastActivity.subject}
                   </span>
                 </div>
-              ) : (
-                <Dash />
-              )}
+              ) : null}
             </DetailField>
           </dl>
         </CardContent>
@@ -229,7 +221,7 @@ export default async function CompanyDetailPage({
               <SourceBadge source={company.source} />
             </DetailField>
             <DetailField label="ICP fit">
-              {company.icpFit ? <IcpFitBadge fit={company.icpFit} /> : <Dash />}
+              {company.icpFit ? <IcpFitBadge fit={company.icpFit} /> : null}
             </DetailField>
             <DetailField
               label="Created"
