@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
@@ -47,6 +47,29 @@ const ICP_FIT_OPTIONS: { value: IcpFit; label: string }[] = [
   { value: "weak", label: "Weak fit" },
   { value: "none", label: "Not a fit" },
 ];
+
+/**
+ * "Arrived …" is relative to render time, which SSR and the client hydration
+ * pass compute at genuinely different wall-clock moments (this is a "use
+ * client" component, but Next still renders it on the server for the initial
+ * HTML). formatDistanceToNowStrict() reads Date.now() internally, so calling
+ * it straight in the render body is the classic Date.now()-in-render
+ * hydration mismatch - the two passes can legitimately disagree, most
+ * visibly when a slow first paint lets the string cross a rounding boundary
+ * (e.g. "59 seconds ago" -> "1 minute ago"). Fix: render a value that's
+ * identical on both passes (an ISO timestamp is a pure function of the Date,
+ * no clock read involved), then swap to the relative string in an effect,
+ * which only runs after hydration has already committed.
+ */
+function ArrivedLabel({ arrivedAt }: { arrivedAt: Date }) {
+  const [label, setLabel] = useState(() => arrivedAt.toISOString());
+
+  useEffect(() => {
+    setLabel(formatDistanceToNowStrict(arrivedAt, { addSuffix: true }));
+  }, [arrivedAt]);
+
+  return <>{label}</>;
+}
 
 export function ReviewQueue({ rows }: { rows: ReviewQueueRow[] }) {
   return (
@@ -122,7 +145,7 @@ function ReviewRow({ row }: { row: ReviewQueueRow }) {
           <p className="text-sm text-muted-foreground">
             {row.domain ?? "No domain on file"} · {row.pendingCount}{" "}
             {row.pendingCount === 1 ? "finding" : "findings"} · arrived{" "}
-            {formatDistanceToNowStrict(row.arrivedAt, { addSuffix: true })}
+            <ArrivedLabel arrivedAt={row.arrivedAt} />
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

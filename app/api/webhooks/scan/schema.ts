@@ -32,22 +32,3 @@ export const scanPayloadSchema = z.object({
 
 export type ScanPayload = z.infer<typeof scanPayloadSchema>;
 export type ScanFinding = z.infer<typeof scanFindingSchema>;
-
-/**
- * Local to this route on purpose - not imported from Agent A's
- * app/api/companies/schema.ts, even though a normalizeDomain already exists
- * there for INV-22 dedupe. That module is outside app/api/webhooks/** and
- * app/api/findings/**, so this route does not depend on it (CLAUDE.md
- * section 7): if Agent A changes their normalization rule for the
- * companies-dedupe feature, this webhook's idempotency must not silently
- * change behavior underneath it.
- */
-export function normalizeScanDomain(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split("/")[0]
-    .split("?")[0];
-}
