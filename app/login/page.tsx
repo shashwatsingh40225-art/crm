@@ -11,7 +11,7 @@ export default async function LoginPage({
   const { next } = await searchParams;
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-6 bg-secondary/50 dark:bg-background">
+    <main className="flex min-h-svh items-center justify-center p-6 bg-gradient-to-br from-secondary/60 via-background to-primary/5 dark:from-background dark:via-background dark:to-primary/5">
       <Suspense>
         <LoginForm next={next ?? "/dashboard"} />
       </Suspense>

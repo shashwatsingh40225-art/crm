@@ -33,7 +33,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-6">
+    <main className="flex min-h-svh items-center justify-center p-6 bg-gradient-to-b from-background to-destructive/[0.03]">
       <EmptyState
         className="w-full max-w-md"
         icon={TriangleAlert}

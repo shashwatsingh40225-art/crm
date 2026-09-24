@@ -50,7 +50,7 @@ export function DealsFilters({
     searchParams.has("q");
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/30 px-3 py-2">
       <Select
         value={searchParams.get("stage") ?? "all"}
         onValueChange={(v) => setParam("stage", v === "all" ? null : v)}

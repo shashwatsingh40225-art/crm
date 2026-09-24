@@ -280,7 +280,7 @@ export function CsvImporter({
     <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">1 · Choose a file</CardTitle>
+          <CardTitle className="text-base font-semibold">1 · Choose a file</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
           <Input
@@ -302,7 +302,7 @@ export function CsvImporter({
         <>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">2 · Map columns</CardTitle>
+              <CardTitle className="text-base font-semibold">2 · Map columns</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               {FIELDS.map(({ key, label, required }) => (
@@ -339,7 +339,7 @@ export function CsvImporter({
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-              <CardTitle className="text-base">
+              <CardTitle className="text-base font-semibold">
                 3 · Preview{" "}
                 <span className="text-muted-foreground font-normal">
                   (first {Math.min(PREVIEW_ROWS, previewRows.length)} of{" "}

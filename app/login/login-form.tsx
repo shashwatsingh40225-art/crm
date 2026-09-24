@@ -30,13 +30,13 @@ export function LoginForm({ next }: { next: string }) {
   });
 
   return (
-    <Card className="w-full max-w-sm shadow-xl shadow-primary/5 border-border/80">
+    <Card className="w-full max-w-sm shadow-2xl shadow-primary/8 border-border/60">
       <CardHeader className="text-center pb-3">
-        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-[#232366] text-white text-lg font-bold tracking-tight shadow-md">
+        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2d2a6e] to-[#3d38a0] text-white text-lg font-bold tracking-tight shadow-lg shadow-primary/25">
           IN
         </div>
-        <CardTitle className="text-xl tracking-tight font-semibold">Invictus CRM</CardTitle>
-        <CardDescription className="text-xs">
+        <CardTitle className="text-xl tracking-tight font-bold">Invictus CRM</CardTitle>
+        <CardDescription className="text-xs text-muted-foreground/80">
           Sign in to the Verena launch pipeline.
         </CardDescription>
       </CardHeader>

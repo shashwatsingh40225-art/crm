@@ -33,7 +33,7 @@ export function PaginationControls({ total, page }: { total: number; page: numbe
           disabled={page <= 1}
           onClick={() => setPage(page - 1 <= 1 ? null : page - 1)}
         >
-          Previous
+          ← Prev
         </Button>
         <span className="text-muted-foreground text-sm">
           Page {page} of {pageCount}
@@ -44,7 +44,7 @@ export function PaginationControls({ total, page }: { total: number; page: numbe
           disabled={page >= pageCount}
           onClick={() => setPage(page + 1)}
         >
-          Next
+          Next →
         </Button>
       </div>
     </div>

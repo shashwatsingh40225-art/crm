@@ -18,7 +18,7 @@ export function DealsViewTabs() {
     );
 
   return (
-    <div className="flex w-fit gap-1 rounded-lg border p-1">
+    <div className="flex w-fit gap-0.5 rounded-xl border border-border/60 p-1 bg-muted/30">
       <Link href="/deals" className={tabClass(!isBoard)}>
         List
       </Link>

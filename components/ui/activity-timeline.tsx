@@ -384,14 +384,14 @@ export function ActivityTimeline({
               return (
                 <li
                   key={activity.id}
-                  className="flex gap-3 rounded-lg border border-border/60 bg-card p-3.5 shadow-sm transition-all hover:border-border/90 hover:shadow-md"
+                  className="flex gap-3 rounded-xl border border-border/40 bg-card p-4 shadow-[0_1px_2px_0_rgb(0_0_0_/_0.03)] transition-all duration-200 hover:border-border/70 hover:shadow-[0_2px_8px_0_rgb(0_0_0_/_0.06)]"
                 >
-                  <div className="bg-primary/10 text-primary mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full">
+                  <div className="bg-primary/8 text-primary mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ring-1 ring-primary/10">
                     <Icon className="size-3.5" />
                   </div>
                   <div className="grid flex-1 gap-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold tracking-tight leading-snug">{activity.subject}</p>
+                      <p className="text-sm font-medium tracking-tight leading-snug">{activity.subject}</p>
                       <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                         {formatDistanceToNow(new Date(activity.occurredAt), {
                           addSuffix: true,

@@ -42,7 +42,7 @@ export function DealsSearch() {
 
   return (
     <div className="relative w-64">
-      <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+      <Search className="text-primary/40 pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}

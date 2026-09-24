@@ -36,14 +36,14 @@ export function AppSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-2">
-          <div className="bg-[#232366] text-white flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold tracking-tight shadow-sm">
+          <div className="bg-gradient-to-br from-[#2d2a6e] to-[#3d38a0] text-white flex size-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold tracking-tight shadow-md shadow-primary/20">
             IN
           </div>
           <div className="grid min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="truncate text-sm font-semibold tracking-tight">
+            <span className="truncate text-[13px] font-bold tracking-tight">
               Invictus CRM
             </span>
-            <span className="text-muted-foreground truncate text-[11px]">
+            <span className="text-muted-foreground truncate text-[10px] font-medium tracking-wide uppercase">
               Verena launch
             </span>
           </div>
@@ -91,7 +91,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center">
-              <div className="bg-primary/10 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
+              <div className="bg-primary/12 text-primary flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ring-1 ring-primary/10">
                 {userName
                   .split(" ")
                   .map((n) => n[0])

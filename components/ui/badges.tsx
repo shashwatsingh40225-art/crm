@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
  * emits classes it can see in the source.
  */
 
-const badgeBase = "border text-[11px] font-medium tracking-tight rounded-full px-2 py-0.5";
+const badgeBase = "border text-[11px] font-semibold tracking-tight rounded-full px-2.5 py-0.5 shadow-[0_0_0_0.5px_rgba(0,0,0,0.02)]";
 
 // --- Stage (deal pipeline position) ---------------------------------------
 

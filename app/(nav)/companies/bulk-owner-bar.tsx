@@ -64,7 +64,7 @@ export function BulkOwnerBar({
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5">
       <span className="text-sm font-medium">
         {selectedIds.length} selected
       </span>

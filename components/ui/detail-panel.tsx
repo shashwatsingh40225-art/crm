@@ -34,7 +34,7 @@ export function DetailPanel({
         </CardHeader>
       ) : null}
       <CardContent>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">{children}</dl>
+        <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">{children}</dl>
       </CardContent>
     </Card>
   );
@@ -65,8 +65,8 @@ export function DetailField({
 
   return (
     <div className={cn("grid gap-1", className)}>
-      <dt className="text-muted-foreground text-xs font-medium">{label}</dt>
-      <dd className="text-sm">
+      <dt className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">{label}</dt>
+      <dd className="text-sm font-medium">
         {hasValue ? (
           (children ?? value)
         ) : (

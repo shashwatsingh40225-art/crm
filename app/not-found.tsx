@@ -18,7 +18,7 @@ export const metadata = { title: "Page not found · Invictus CRM" };
  */
 export default function NotFound() {
   return (
-    <div className="flex min-h-[70svh] items-center justify-center p-6">
+    <div className="flex min-h-[70svh] items-center justify-center p-6 bg-muted/20 rounded-2xl">
       <EmptyState
         className="w-full max-w-md"
         icon={FileQuestion}

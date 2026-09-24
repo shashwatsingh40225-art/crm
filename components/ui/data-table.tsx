@@ -59,7 +59,7 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className={cn("overflow-x-auto rounded-lg border border-border/60 bg-card shadow-sm", className)}>
+    <div className={cn("overflow-x-auto rounded-xl border border-border/50 bg-card shadow-[0_1px_3px_0_rgb(0_0_0_/_0.04),_0_1px_2px_-1px_rgb(0_0_0_/_0.04)]", className)}>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -74,7 +74,7 @@ export function DataTable<TData, TValue>({
                       <button
                         type="button"
                         onClick={header.column.getToggleSortingHandler()}
-                        className="hover:text-foreground -ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5"
+                        className="hover:text-foreground hover:bg-muted/50 -ml-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors duration-100"
                         aria-label={`Sort by ${String(header.column.id)}`}
                       >
                         {flexRender(
@@ -119,7 +119,7 @@ export function DataTable<TData, TValue>({
                 onClick={
                   onRowClick ? () => onRowClick(row.original) : undefined
                 }
-                className={cn(onRowClick && "hover:bg-muted/50 cursor-pointer")}
+                className={cn(onRowClick && "hover:bg-muted/40 cursor-pointer transition-colors duration-100")}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>

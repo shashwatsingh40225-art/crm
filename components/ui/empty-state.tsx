@@ -28,12 +28,12 @@ export function EmptyState({
       )}
     >
       {Icon ? (
-        <div className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full">
-          <Icon className="size-5" />
+        <div className="bg-primary/8 text-primary flex size-12 items-center justify-center rounded-full">
+          <Icon className="size-5 opacity-80" />
         </div>
       ) : null}
-      <div className="grid gap-1">
-        <p className="font-medium">{title}</p>
+      <div className="grid gap-1.5">
+        <p className="font-semibold tracking-tight">{title}</p>
         {description ? (
           <p className="text-muted-foreground max-w-sm text-sm">
             {description}
