@@ -33,10 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${plusJakartaSans.variable} ${inter.variable} ${geistMono.variable} antialiased`}
-      >
+    // Font variables go on <html>, not <body>: globals.css applies `font-sans`
+    // to <html>, and a variable defined only on <body> is undefined there, so
+    // body text fell back to the browser's default serif.
+    <html
+      lang="en"
+      className={`${plusJakartaSans.variable} ${inter.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
